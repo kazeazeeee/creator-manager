@@ -28,7 +28,8 @@ import {
   apiGetCalendar, 
   apiAddCalendar, 
   apiGetSettings, 
-  apiSaveSettings 
+  apiSaveSettings,
+  apiSyncRecentPosts
 } from './utils/api';
 
 import { parseAuthHash, fetchGoogleEvents } from './utils/googleCalendar';
@@ -79,6 +80,26 @@ function App() {
           if (settingsData.fontPreference) {
             setFontPreference(settingsData.fontPreference);
           }
+        }
+
+        // Lazy Sync: Trigger auto-refresh in background if never synced or synced > 4 hours ago
+        const lastSynced = profileData.postsLastSynced;
+        const now = new Date();
+        const shouldSync = !lastSynced || (now - new Date(lastSynced)) > (4 * 60 * 60 * 1000);
+        if (shouldSync && (profileData.tiktok || profileData.youtube || profileData.instagram)) {
+          console.log('Lazy Sync: Auto-refreshing feed in background...');
+          apiSyncRecentPosts().then(res => {
+            if (res && res.success) {
+              setProfile(prev => ({
+                ...prev,
+                recentPosts: res.recentPosts,
+                postsLastSynced: res.postsLastSynced
+              }));
+              console.log('Lazy Sync feed completed.');
+            }
+          }).catch(err => {
+            console.error('Lazy Sync background failed:', err.message);
+          });
         }
       } catch (err) {
         console.error('Failed to load data from backend server:', err);
