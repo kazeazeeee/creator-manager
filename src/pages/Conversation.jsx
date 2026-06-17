@@ -40,6 +40,7 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask }) => {
   const [activeSessionId, setActiveSessionId] = useState(null);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [thinkingStep, setThinkingStep] = useState(0);
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editTitleText, setEditTitleText] = useState('');
 
@@ -62,6 +63,30 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask }) => {
   const fileInputRef = useRef(null);
 
   const [copiedMsgIdx, setCopiedMsgIdx] = useState(null);
+
+  // Thinking steps animation
+  const THINKING_STEPS = [
+    '🔍 Membaca profil kreator...',
+    '📊 Mengecek data analitik & performa...',
+    '📋 Menelusuri pipeline & alur kerja...',
+    '🧾 Memeriksa daftar invoice...',
+    '📅 Melihat agenda kalender...',
+    '🧠 Menyusun balasan...'
+  ];
+
+  useEffect(() => {
+    if (!loading) {
+      setThinkingStep(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setThinkingStep(prev => {
+        if (prev < THINKING_STEPS.length - 1) return prev + 1;
+        return prev; // stay on last step
+      });
+    }, 1200);
+    return () => clearInterval(interval);
+  }, [loading]);
 
   const handleCopyMessage = (text, idx) => {
     navigator.clipboard.writeText(text);
@@ -929,9 +954,34 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask }) => {
                 {loading && (
                   <div className="message-bubble-wrapper assistant">
                     <span className="message-sender">Manajer Digital</span>
-                    <div className="message-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.8 }}>
-                      <RefreshCw className="animate-spin" size={12} style={{ color: 'var(--accent-color)' }} />
-                      <span>Sedang merumuskan jawaban...</span>
+                    <div className="message-bubble" style={{ opacity: 0.9, padding: '14px 16px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {THINKING_STEPS.map((step, idx) => (
+                          <div
+                            key={idx}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              fontSize: '12px',
+                              transition: 'all 0.4s ease',
+                              opacity: idx < thinkingStep ? 0.4 : idx === thinkingStep ? 1 : 0.15,
+                              color: idx === thinkingStep ? 'var(--accent-color)' : 'var(--text-secondary)',
+                              fontWeight: idx === thinkingStep ? '600' : '400',
+                              transform: idx <= thinkingStep ? 'translateX(0)' : 'translateX(8px)'
+                            }}
+                          >
+                            {idx < thinkingStep ? (
+                              <Check size={11} style={{ color: 'var(--success-color)', flexShrink: 0 }} />
+                            ) : idx === thinkingStep ? (
+                              <RefreshCw className="animate-spin" size={11} style={{ flexShrink: 0 }} />
+                            ) : (
+                              <span style={{ width: '11px', height: '11px', display: 'inline-block', flexShrink: 0 }} />
+                            )}
+                            <span>{step}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
