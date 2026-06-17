@@ -1607,7 +1607,7 @@ const distPath = path.join(__dirname, 'dist');
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
   // Fallback wildcard route to support React Router in client-side routing
-  app.get('*', (req, res, next) => {
+  app.use((req, res, next) => {
     // If it starts with /api, pass it to api routing / let it 404
     if (req.path.startsWith('/api')) {
       return next();
