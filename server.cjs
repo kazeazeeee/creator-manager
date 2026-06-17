@@ -4,6 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const pdfParse = require('pdf-parse');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const upload = multer({ limits: { fileSize: 100 * 1024 * 1024 } }); // 100MB limit
@@ -12,8 +14,23 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const DB_PATH = path.join(__dirname, 'db.json');
 
+// Security Middlewares
+app.use(helmet({
+  contentSecurityPolicy: false, // Turn off CSP locally to prevent breaking React bundle
+}));
+
+// API Rate Limiting to prevent DDoS and Spam
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500, // Limit each IP to 500 requests per windowMs
+  message: { error: 'Too many requests from this IP, please try again after 15 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/', apiLimiter);
+
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // Limit JSON body size
 
 // Database Helpers
 const readDb = () => {
@@ -38,6 +55,42 @@ const writeDb = (data) => {
     return false;
   }
 };
+
+// --- BACKUP AUTOMATION ---
+const BACKUP_DIR = path.join(__dirname, 'backups');
+if (!fs.existsSync(BACKUP_DIR)) {
+  fs.mkdirSync(BACKUP_DIR);
+}
+
+const performBackup = () => {
+  try {
+    if (!fs.existsSync(DB_PATH)) return;
+    const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const backupPath = path.join(BACKUP_DIR, `db-backup-${dateStr}.json`);
+    
+    // Copy file
+    fs.copyFileSync(DB_PATH, backupPath);
+    console.log(`[BACKUP] db.json successfully backed up to ${backupPath}`);
+
+    // Rotate backups (keep only last 7 days)
+    const files = fs.readdirSync(BACKUP_DIR).filter(f => f.startsWith('db-backup-') && f.endsWith('.json'));
+    if (files.length > 7) {
+      const sortedFiles = files.sort();
+      const filesToDelete = sortedFiles.slice(0, sortedFiles.length - 7);
+      for (const file of filesToDelete) {
+        fs.unlinkSync(path.join(BACKUP_DIR, file));
+        console.log(`[BACKUP] Deleted old backup: ${file}`);
+      }
+    }
+  } catch (err) {
+    console.error('[BACKUP] Failed to perform backup:', err);
+  }
+};
+
+// Run backup immediately on startup, then every 24 hours
+performBackup();
+setInterval(performBackup, 24 * 60 * 60 * 1000);
+// -------------------------
 
 // --- REST API ENDPOINTS ---
 
