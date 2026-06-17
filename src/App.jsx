@@ -409,6 +409,7 @@ function App() {
             }} 
             googleConnected={googleConnected} 
             addPipelineTask={handleAddPipelineTask}
+            profile={profile}
           />
         );
       case 'mediakit':

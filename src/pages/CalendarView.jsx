@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Tag, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Tag, AlertTriangle, Sparkles } from 'lucide-react';
 
-const CalendarView = ({ calendarEvents = [], setCalendarEvents, googleConnected, addPipelineTask }) => {
+const CalendarView = ({ calendarEvents = [], setCalendarEvents, googleConnected, addPipelineTask, profile = {} }) => {
   const [currentDate, setCurrentDate] = useState(new Date(2026, 5, 16)); // Fixed start date matching system time: June 16, 2026 (Month index 5 is June)
   const [showAddForm, setShowAddForm] = useState(false);
   const [newEvent, setNewEvent] = useState({
@@ -10,6 +10,82 @@ const CalendarView = ({ calendarEvents = [], setCalendarEvents, googleConnected,
     type: 'personal', // personal, brand, deadline
     brand: ''
   });
+
+  // Calculate best posting times dynamically or via researched schedules
+  const getBestPostingTimesForDate = (dateStr) => {
+    const d = new Date(dateStr);
+    const dayOfWeek = d.getDay(); // 0 is Sunday, 1 is Monday...
+    const recs = [];
+    
+    if (dayOfWeek === 1) recs.push({ platform: 'Instagram', time: '19:00', reason: 'High active engagement rate' });
+    if (dayOfWeek === 2) recs.push({ platform: 'YouTube', time: '17:00', reason: 'Optimal uploaded upload window' });
+    if (dayOfWeek === 3) recs.push({ platform: 'TikTok', time: '18:00', reason: 'Peak commuting home traffic' });
+    if (dayOfWeek === 4) {
+      recs.push({ platform: 'Instagram', time: '18:00', reason: 'Pre-weekend social usage' });
+      recs.push({ platform: 'YouTube', time: '16:00', reason: 'Post-school/work study time' });
+    }
+    if (dayOfWeek === 5) recs.push({ platform: 'TikTok', time: '19:30', reason: 'Friday prime night viewing' });
+    if (dayOfWeek === 6) {
+      recs.push({ platform: 'Instagram', time: '20:00', reason: 'Weekend lifestyle peak' });
+      recs.push({ platform: 'YouTube', time: '10:00', reason: 'Saturday leisure browsing' });
+    }
+    if (dayOfWeek === 0) recs.push({ platform: 'TikTok', time: '12:00', reason: 'Sunday midday casual scroll' });
+    
+    return recs;
+  };
+
+  const getDynamicInsights = () => {
+    const posts = profile.recentPosts || [];
+    if (posts.length === 0) {
+      return {
+        bestDay: 'Jumat',
+        bestPlatform: 'TikTok',
+        reason: 'Berdasarkan statistik umum kreator niche ' + (profile.niche || 'konten') + ', audiens paling aktif pada hari Jumat malam.'
+      };
+    }
+    
+    const dayStats = {};
+    const daysName = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    
+    posts.forEach(p => {
+      if (!p.uploadDate) return;
+      const dayIdx = new Date(p.uploadDate).getDay();
+      if (!dayStats[dayIdx]) {
+        dayStats[dayIdx] = { count: 0, views: 0, platform: p.platform };
+      }
+      dayStats[dayIdx].count++;
+      dayStats[dayIdx].views += (p.views || 0);
+    });
+    
+    let bestDayIdx = 5; // Friday default
+    let maxViews = -1;
+    let bestPlatform = 'TikTok';
+    
+    Object.keys(dayStats).forEach(idx => {
+      const avgViews = dayStats[idx].views / dayStats[idx].count;
+      if (avgViews > maxViews) {
+        maxViews = avgViews;
+        bestDayIdx = parseInt(idx);
+        bestPlatform = dayStats[idx].platform;
+      }
+    });
+    
+    return {
+      bestDay: daysName[bestDayIdx],
+      bestPlatform,
+      reason: `Postingan ${bestPlatform} Anda pada hari ${daysName[bestDayIdx]} mencatat rata-rata performa penonton tertinggi (${(maxViews || 0).toLocaleString('id-ID')} views).`
+    };
+  };
+
+  const handleSelectBestTime = (dateStr, rec) => {
+    setNewEvent({
+      title: `Upload ${rec.platform} Terjadwal (AI)`,
+      date: dateStr,
+      type: 'personal',
+      brand: ''
+    });
+    setShowAddForm(true);
+  };
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -247,12 +323,44 @@ const CalendarView = ({ calendarEvents = [], setCalendarEvents, googleConnected,
                   className={`calendar-day-card ${!cell.isCurrentMonth ? 'other-month' : ''} ${cell.isToday ? 'today' : ''}`}
                   style={{ minHeight: '110px' }}
                 >
-                  <div className="calendar-day-number">
-                    {cell.day}
-                    {cell.isToday && <span style={{ marginLeft: '6px', fontSize: '9px', padding: '2px 6px', borderRadius: '8px', backgroundColor: 'var(--accent-light)', color: 'var(--accent-color)' }}>Hari Ini</span>}
+                  <div className="calendar-day-number" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>{cell.day}</span>
+                    {cell.isToday && <span style={{ fontSize: '9px', padding: '2px 6px', borderRadius: '8px', backgroundColor: 'var(--accent-light)', color: 'var(--accent-color)' }}>Hari Ini</span>}
                   </div>
                   
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', overflowY: 'auto', flexGrow: 1, maxHeight: '80px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', overflowY: 'auto', flexGrow: 1, maxHeight: '80px', marginTop: '4px' }}>
+                    {/* Render AI Best Posting Times Recommendations */}
+                    {cell.isCurrentMonth && getBestPostingTimesForDate(cell.dateString).map((rec, rIdx) => (
+                      <button
+                        key={`ai-rec-${rIdx}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectBestTime(cell.dateString, rec);
+                        }}
+                        className="calendar-event-ai-rec"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '9.5px',
+                          fontWeight: '600',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          background: 'linear-gradient(135deg, rgba(234, 179, 8, 0.1), rgba(249, 115, 22, 0.1))',
+                          border: '1px solid rgba(234, 179, 8, 0.25)',
+                          color: '#eab308',
+                          cursor: 'pointer',
+                          width: '100%',
+                          textAlign: 'left',
+                          transition: 'transform 0.1s'
+                        }}
+                        title={`Rekomendasi AI: Upload ${rec.platform} pada jam ${rec.time} (${rec.reason}). Klik untuk menjadwalkan.`}
+                      >
+                        <Sparkles size={8} style={{ flexShrink: 0 }} />
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>AI: {rec.platform} {rec.time}</span>
+                      </button>
+                    ))}
+
                     {dayEvents.map(event => (
                       <div 
                         key={event.id} 
@@ -273,6 +381,59 @@ const CalendarView = ({ calendarEvents = [], setCalendarEvents, googleConnected,
 
         </div>
       </div>
+
+      {/* AI Best Posting Time Insights Summary Card */}
+      <div className="card" style={{
+        marginTop: '20px',
+        padding: '20px',
+        background: 'linear-gradient(135deg, var(--bg-secondary) 0%, rgba(234, 179, 8, 0.03) 100%)',
+        border: '1px solid var(--border-color)',
+        borderRadius: 'var(--border-radius-md)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+          <div style={{ padding: '8px', borderRadius: '8px', backgroundColor: 'rgba(234, 179, 8, 0.1)', color: '#eab308' }}>
+            <Sparkles size={18} />
+          </div>
+          <div>
+            <h3 style={{ fontSize: '15px', fontWeight: '600', margin: 0, color: 'var(--text-primary)' }}>AI Insights: Waktu Posting Terbaik Anda</h3>
+            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>Dianalisis secara real-time berdasarkan performa penonton postingan media sosial Anda.</p>
+          </div>
+        </div>
+
+        {(() => {
+          const insights = getDynamicInsights();
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px', marginTop: '16px', alignItems: 'center' }}>
+              <div style={{
+                padding: '16px',
+                borderRadius: '10px',
+                backgroundColor: 'var(--bg-tertiary)',
+                border: '1px solid var(--border-color)',
+                textAlign: 'center'
+              }}>
+                <span style={{ fontSize: '11px', textTransform: 'uppercase', tracking: '0.05em', color: 'var(--text-secondary)', fontWeight: 'bold' }}>Hari Terbaik</span>
+                <h4 style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--accent-color)', margin: '6px 0' }}>{insights.bestDay}</h4>
+                <span style={{ fontSize: '11.5px', color: 'var(--text-primary)', fontWeight: '500' }}>Platform Utama: {insights.bestPlatform}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'start', gap: '8px' }}>
+                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#eab308', marginTop: '6px', flexShrink: 0 }} />
+                  <p style={{ fontSize: '12.5px', color: 'var(--text-primary)', margin: 0, lineHeight: '1.5' }}>
+                    {insights.reason}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'start', gap: '8px' }}>
+                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--accent-color)', marginTop: '6px', flexShrink: 0 }} />
+                  <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.5' }}>
+                    Klik tombol rekomendasi <span style={{ color: '#eab308', fontWeight: '600' }}>AI: [Platform] [Jam]</span> di atas pada kalender untuk langsung menjadwalkan draf/brief konten Anda secara asisten-sentris.
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
     </div>
   );
 };
