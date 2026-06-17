@@ -25,7 +25,9 @@ const AGENT_MENTIONS_MAP = {
   '@prcrisis': 'PR Crisis Specialist',
   '@communityengagement': 'Community Engagement Agent',
   '@campaignanalytics': 'Campaign Analytics Agent',
-  '@wellnessguard': 'Wellness Guard'
+  '@wellnessguard': 'Wellness Guard',
+  '@briefmaster': 'Brief Master',
+  '@financialcoach': 'Financial Coach'
 };
 
 const SUGGESTIONS = [
