@@ -208,3 +208,9 @@ export const apiExtractDraft = (chatText) => request('/ai/extract-draft', {
   body: JSON.stringify({ chatText })
 });
 
+export const apiGeneratePitch = (brandName, objective, serviceName, serviceRate, tone, creatorProfile, displayFollowers) => request('/ai/generate-pitch', {
+  method: 'POST',
+  body: JSON.stringify({ brandName, objective, serviceName, serviceRate, tone, creatorProfile, displayFollowers })
+});
+
+

@@ -1602,6 +1602,105 @@ Kembalikan hasil ekstraksi dalam format JSON yang valid dengan struktur berikut:
   }
 });
 
+const fallbackGeneratePitch = (brandName, objective, serviceName, serviceRate, tone, creatorProfile, displayFollowers) => {
+  const name = creatorProfile.name || 'Kreator';
+  const niche = creatorProfile.niche || 'Gaya Hidup';
+  const handle = creatorProfile.handle || '@kreator';
+  const er = creatorProfile.engagementRate || '4.5%';
+  
+  let subject = `Kolaborasi Konten Kreatif - ${name} x ${brandName}`;
+  let greeting = `Dear Tim Pemasaran ${brandName},`;
+  
+  if (tone === 'Kasual / Akrab') {
+    subject = `Halo ${brandName}! Kolaborasi Seru bareng ${name}`;
+    greeting = `Halo Tim ${brandName},`;
+  } else if (tone === 'Kreatif / Out of the box') {
+    subject = `Ide Kolaborasi Viral untuk ${brandName} dari ${name}`;
+    greeting = `Hi Tim ${brandName} yang Keren!`;
+  }
+  
+  const body = `${greeting}
+
+Perkenalkan, nama saya ${name} (kreator di balik akun ${handle}). Saya membuat konten yang fokus di ceruk ${niche} dan sangat menyukai produk dari ${brandName}.
+
+Saya melihat ${brandName} sedang gencar mempromosikan produknya, dan saya ingin menawarkan kerja sama pembuatan konten untuk mendukung tujuan ${objective} Anda. Saat ini, audiens saya memiliki statistik sebagai berikut:
+- Total Pengikut Gabungan: ${displayFollowers}
+- Engagement Rate (ER): ${er}
+
+Saya ingin menawarkan layanan jasa "${serviceName}" dengan rate card sebesar ${serviceRate}. Saya yakin melalui konten kreatif ini, kita bisa memperkenalkan ${brandName} dengan cara yang lebih segar dan organik ke audiens saya.
+
+Terlampir Media Kit lengkap saya untuk peninjauan lebih lanjut. Apakah kita bisa menjadwalkan obrolan singkat minggu ini untuk membahas ide kolaborasi ini?
+
+Salam hangat,
+${name}
+${handle}`;
+
+  return { subject, body };
+};
+
+// 15. AI Brand Pitch Generator
+app.post('/api/ai/generate-pitch', async (req, res) => {
+  const db = readDb();
+  const apiKey = getApiKey(db);
+  const models = getModels(db);
+  const { brandName, objective, serviceName, serviceRate, tone, creatorProfile, displayFollowers } = req.body;
+
+  if (!apiKey) {
+    const result = fallbackGeneratePitch(brandName, objective, serviceName, serviceRate, tone, creatorProfile, displayFollowers);
+    return res.json(result);
+  }
+
+  const prompt = `
+Anda adalah asisten manajer bisnis kreator yang profesional.
+Tugas Anda adalah menulis draf email penawaran sponsor yang sangat menarik untuk brand "${brandName}" dengan gaya bahasa (tone) "${tone}".
+
+Detail Kampanye & Kerja sama:
+- Tujuan Kampanye: ${objective}
+- Layanan yang ditawarkan: ${serviceName} (Harga: ${serviceRate})
+
+Profil Kreator (Gunakan data ini sebagai social proof):
+- Nama Kreator: ${creatorProfile.name || 'Kreator'}
+- Niche: ${creatorProfile.niche || 'Gaya Hidup'}
+- Bio/Fokus Konten: ${creatorProfile.bio || ''}
+- Jumlah Pengikut Gabungan: ${displayFollowers || '100K+'}
+- Engagement Rate (ER): ${creatorProfile.engagementRate || '3.5%'}
+- Rata-rata Views: ${creatorProfile.youtubeViews || '50K'}
+
+Aturan Email:
+1. Subjek email harus menggugah rasa ingin tahu brand, singkat, dan profesional.
+2. Jelaskan ketertarikan kreator pada produk/brand "${brandName}".
+3. Sebutkan kelebihan statistik kreator (Pengikut: ${displayFollowers}, ER: ${creatorProfile.engagementRate}) sebagai nilai jual utama.
+4. Tawarkan kolaborasi "${serviceName}" untuk mendukung tujuan "${objective}" dari brand "${brandName}".
+5. Sediakan Call-to-Action (CTA) yang jelas untuk berdiskusi lebih lanjut.
+6. JANGAN gunakan placeholder (seperti "[Nama Brand]", "[Nama Anda]"), melainkan isi langsung dengan data yang disediakan.
+7. Berikan output dalam format JSON valid dengan struktur berikut:
+   {
+     "subject": "Subjek email...",
+     "body": "Isi email lengkap..."
+   }
+`;
+
+  try {
+    const aiResponse = await callSumopod(prompt, apiKey, models.optimal || models.biasa, true);
+    let cleaned = aiResponse.trim();
+    if (cleaned.startsWith('```json')) {
+      cleaned = cleaned.substring(7);
+    } else if (cleaned.startsWith('```')) {
+      cleaned = cleaned.substring(3);
+    }
+    if (cleaned.endsWith('```')) {
+      cleaned = cleaned.substring(0, cleaned.length - 3);
+    }
+    cleaned = cleaned.trim();
+    
+    res.json(JSON.parse(cleaned));
+  } catch (err) {
+    console.warn("Failed calling Sumopod for brand pitch generation, falling back to local:", err.message);
+    const result = fallbackGeneratePitch(brandName, objective, serviceName, serviceRate, tone, creatorProfile, displayFollowers);
+    res.json(result);
+  }
+});
+
 // Serve static assets in production (Vite build output)
 const distPath = path.join(__dirname, 'dist');
 if (fs.existsSync(distPath)) {

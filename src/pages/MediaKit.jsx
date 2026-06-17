@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { User, Image, Plus, Trash, Download, Check, Save } from 'lucide-react';
+import { User, Image, Plus, Trash, Download, Check, Save, Mail, ExternalLink, Sparkles, Send, Copy } from 'lucide-react';
 import { formatCurrency } from '../utils/helpers';
-import { apiGetProfile, apiSaveProfile } from '../utils/api';
+import { apiGetProfile, apiSaveProfile, apiGeneratePitch } from '../utils/api';
 
 const MediaKit = ({ profile, setProfile }) => {
   const parseFollowers = (str) => {
@@ -48,6 +48,19 @@ const MediaKit = ({ profile, setProfile }) => {
   });
 
   const [savedMsg, setSavedMsg] = useState(false);
+
+  // Interactive Brand Pitch states
+  const [pitchBrandName, setPitchBrandName] = useState('');
+  const [pitchObjective, setPitchObjective] = useState('Brand Awareness');
+  const [pitchServiceIdx, setPitchServiceIdx] = useState(0);
+  const [pitchTone, setPitchTone] = useState('Profesional Formal');
+  
+  const [pitchSubject, setPitchSubject] = useState('');
+  const [pitchBody, setPitchBody] = useState('');
+  const [pitchLoading, setPitchLoading] = useState(false);
+  
+  const [copiedSubject, setCopiedSubject] = useState(false);
+  const [copiedBody, setCopiedBody] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -107,6 +120,52 @@ const MediaKit = ({ profile, setProfile }) => {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleGeneratePitch = async () => {
+    if (!pitchBrandName.trim()) {
+      alert('Harap masukkan nama brand target terlebih dahulu.');
+      return;
+    }
+
+    setPitchLoading(true);
+    setPitchSubject('');
+    setPitchBody('');
+
+    const selectedServiceObj = formProfile.ratesList[pitchServiceIdx] || { service: 'Layanan Kolaborasi', rate: 0 };
+    const formattedRate = formatCurrency(selectedServiceObj.rate, formProfile.currency);
+
+    try {
+      const result = await apiGeneratePitch(
+        pitchBrandName,
+        pitchObjective,
+        selectedServiceObj.service,
+        formattedRate,
+        pitchTone,
+        formProfile,
+        displayFollowers
+      );
+      
+      setPitchSubject(result.subject || '');
+      setPitchBody(result.body || '');
+    } catch (err) {
+      console.error(err);
+      alert(`Gagal membuat draf pitch: ${err.message}`);
+    } finally {
+      setPitchLoading(false);
+    }
+  };
+
+  const handleCopyPitchSubject = () => {
+    navigator.clipboard.writeText(pitchSubject);
+    setCopiedSubject(true);
+    setTimeout(() => setCopiedSubject(false), 2000);
+  };
+
+  const handleCopyPitchBody = () => {
+    navigator.clipboard.writeText(pitchBody);
+    setCopiedBody(true);
+    setTimeout(() => setCopiedBody(false), 2000);
   };
 
   return (
@@ -404,6 +463,158 @@ const MediaKit = ({ profile, setProfile }) => {
                 </div>
               </div>
             </>
+          )}
+
+          {/* Interactive Brand Pitch Generator Panel */}
+          {!editing && (
+            <div className="card" style={{ gridColumn: 'span 2', marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Sparkles size={18} className="text-accent" style={{ color: 'var(--accent-color)' }} /> Generator Penawaran Sponsor (Brand Pitch)
+                </h3>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>Buat draf proposal email sponsor penawaran kerja sama untuk brand target menggunakan data Media Kit Anda.</p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                {/* Brand Name */}
+                <div className="form-group">
+                  <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)' }}>NAMA BRAND TARGET</label>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    placeholder="misal: Tokopedia, Shopee, Samsung"
+                    value={pitchBrandName}
+                    onChange={(e) => setPitchBrandName(e.target.value)}
+                  />
+                </div>
+
+                {/* Campaign Objective */}
+                <div className="form-group">
+                  <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)' }}>TUJUAN KAMPANYE</label>
+                  <select 
+                    className="form-control"
+                    value={pitchObjective}
+                    onChange={(e) => setPitchObjective(e.target.value)}
+                  >
+                    <option value="Brand Awareness">Brand Awareness (Jangkauan luas)</option>
+                    <option value="Product Launch">Product Launch (Peluncuran produk baru)</option>
+                    <option value="Conversions / Sales">Conversions / Sales (Penjualan/Klik)</option>
+                  </select>
+                </div>
+
+                {/* Selected Service */}
+                <div className="form-group">
+                  <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)' }}>LAYANAN JASA DITAWARKAN</label>
+                  <select 
+                    className="form-control"
+                    value={pitchServiceIdx}
+                    onChange={(e) => setPitchServiceIdx(parseInt(e.target.value))}
+                  >
+                    {formProfile.ratesList.map((item, idx) => (
+                      <option key={idx} value={idx}>
+                        {item.service} ({formatCurrency(item.rate, formProfile.currency)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Tone of Voice */}
+                <div className="form-group">
+                  <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)' }}>GAYA BAHASA (TONE)</label>
+                  <select 
+                    className="form-control"
+                    value={pitchTone}
+                    onChange={(e) => setPitchTone(e.target.value)}
+                  >
+                    <option value="Profesional Formal">Profesional & Formal</option>
+                    <option value="Kasual / Akrab">Kasual & Akrab</option>
+                    <option value="Kreatif / Out of the box">Kreatif & Out of the box</option>
+                  </select>
+                </div>
+              </div>
+
+              <button 
+                className="btn btn-primary"
+                onClick={handleGeneratePitch}
+                disabled={pitchLoading || !pitchBrandName.trim()}
+                style={{ width: '100%' }}
+              >
+                {pitchLoading ? 'Menyusun Proposal AI...' : 'Buat Proposal Penawaran (AI)'}
+              </button>
+
+              {/* Pitch Output Preview */}
+              {(pitchSubject || pitchBody) && (
+                <div style={{ 
+                  marginTop: '16px',
+                  padding: '16px',
+                  borderRadius: 'var(--border-radius-md)',
+                  backgroundColor: 'var(--bg-tertiary)',
+                  border: '1px solid var(--border-color)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '16px'
+                }}>
+                  {/* Subject Line */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)' }}>SUBJEK EMAIL</span>
+                      <button 
+                        className="btn btn-secondary"
+                        onClick={handleCopyPitchSubject}
+                        style={{ padding: '2px 8px', fontSize: '11px', height: '24px' }}
+                      >
+                        {copiedSubject ? <><Check size={10} style={{ color: 'var(--success-color)' }} /> Tersalin</> : <><Copy size={10} /> Salin Subjek</>}
+                      </button>
+                    </div>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      value={pitchSubject}
+                      onChange={(e) => setPitchSubject(e.target.value)}
+                      style={{ fontSize: '13px', fontWeight: '500' }}
+                    />
+                  </div>
+
+                  {/* Body Text */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)' }}>ISI EMAIL PENAWARAN (PITCH)</span>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button 
+                          className="btn btn-secondary"
+                          onClick={handleCopyPitchBody}
+                          style={{ padding: '2px 8px', fontSize: '11px', height: '24px' }}
+                        >
+                          {copiedBody ? <><Check size={10} style={{ color: 'var(--success-color)' }} /> Tersalin</> : <><Copy size={10} /> Salin Isi Email</>}
+                        </button>
+                        <a 
+                          href={`mailto:?subject=${encodeURIComponent(pitchSubject)}&body=${encodeURIComponent(pitchBody)}`}
+                          className="btn btn-primary"
+                          style={{ 
+                            padding: '2px 8px', 
+                            fontSize: '11px', 
+                            height: '24px', 
+                            display: 'inline-flex', 
+                            alignItems: 'center', 
+                            gap: '4px',
+                            textDecoration: 'none',
+                            color: '#fff'
+                          }}
+                        >
+                          <Send size={10} /> Kirim Langsung
+                        </a>
+                      </div>
+                    </div>
+                    <textarea 
+                      className="form-control" 
+                      value={pitchBody}
+                      onChange={(e) => setPitchBody(e.target.value)}
+                      style={{ minHeight: '220px', fontSize: '12.5px', fontFamily: 'var(--font-sans)', lineHeight: '1.6' }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
         </div>
