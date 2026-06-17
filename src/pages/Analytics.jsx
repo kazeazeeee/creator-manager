@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, Users, Heart, MessageSquare, Eye, Save, DollarSign, RefreshCw, Sparkles } from 'lucide-react';
 import { formatCurrency } from '../utils/helpers';
-import { apiGetTasks, apiUpdateTask, apiSyncRecentPosts } from '../utils/api';
+import { apiGetTasks, apiUpdateTask, apiSyncRecentPosts, apiGetAnalytics, apiSaveAnalytics } from '../utils/api';
 
 const MOCK_ANALYTICS_TREND = [
   { brand: 'Wardah Beauty', title: 'Cushion Review', views: 125000, earnings: 4500000 },
@@ -83,6 +83,21 @@ const Analytics = ({ pipelineTasks = [], setPipelineTasks, profile = {}, setProf
     earnings: 0
   });
 
+  // Sync analytics from backend database on mount
+  useEffect(() => {
+    const loadAnalytics = async () => {
+      try {
+        const data = await apiGetAnalytics();
+        if (data && Object.keys(data).length > 0) {
+          setAnalyticsMap(data);
+        }
+      } catch (err) {
+        console.error('Failed to load analytics from backend:', err);
+      }
+    };
+    loadAnalytics();
+  }, []);
+
   useEffect(() => {
     localStorage.setItem('creator_analytics_metrics', JSON.stringify(analyticsMap));
   }, [analyticsMap]);
@@ -102,12 +117,20 @@ const Analytics = ({ pipelineTasks = [], setPipelineTasks, profile = {}, setProf
     setMetricsForm(current);
   };
 
-  const handleSaveMetrics = (taskId) => {
-    setAnalyticsMap({
+  const handleSaveMetrics = async (taskId) => {
+    const newMap = {
       ...analyticsMap,
       [taskId]: metricsForm
-    });
+    };
+    setAnalyticsMap(newMap);
     setEditingTaskId(null);
+
+    // Save to backend database
+    try {
+      await apiSaveAnalytics(newMap);
+    } catch (err) {
+      console.error('Failed to save analytics to backend:', err);
+    }
   };
 
   // Calculations for Overview cards

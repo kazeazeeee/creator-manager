@@ -580,6 +580,20 @@ app.post('/api/settings', (req, res) => {
   res.json({ success: true, settings: db.settings });
 });
 
+// Analytics Endpoints
+app.get('/api/analytics', (req, res) => {
+  const db = readDb();
+  res.json(db.analytics || {});
+});
+
+app.post('/api/analytics', (req, res) => {
+  const db = readDb();
+  db.analytics = req.body;
+  writeDb(db);
+  res.json({ success: true, analytics: db.analytics });
+});
+
+
 // --- AI & SUMOPOD API ENDPOINTS ---
 
 const getApiKey = (db) => {
@@ -780,6 +794,16 @@ app.post('/api/ai/chat', async (req, res) => {
 
   const profile = db.profile || {};
   const recentPosts = profile.recentPosts || [];
+  const analytics = db.analytics || {};
+
+  // Compute overall statistics
+  const totalViewsVal = Object.values(analytics).reduce((sum, item) => sum + (item.views || 0), 0);
+  const totalLikesVal = Object.values(analytics).reduce((sum, item) => sum + (item.likes || 0), 0);
+  const totalCommentsVal = Object.values(analytics).reduce((sum, item) => sum + (item.comments || 0), 0);
+  const totalSharesVal = Object.values(analytics).reduce((sum, item) => sum + (item.shares || 0), 0);
+  const totalEarningsVal = Object.values(analytics).reduce((sum, item) => sum + (item.earnings || 0), 0);
+  const totalEngagements = totalLikesVal + totalCommentsVal + totalSharesVal;
+  const avgER = totalViewsVal > 0 ? ((totalEngagements / totalViewsVal) * 100).toFixed(2) : '0.00';
 
   let creatorContext = `Informasi Profil Kreator:
 - Nama: ${profile.name || 'Tidak diketahui'}
@@ -789,6 +813,14 @@ app.post('/api/ai/chat', async (req, res) => {
 - Instagram Handle/URL: ${profile.instagram || 'Belum diatur'}
 - Email Bisnis: ${profile.email || 'Tidak diketahui'}
 - Pengikut (TikTok/YT/IG): ${profile.followersTiktok || 0} / ${profile.followersYoutube || 0} / ${profile.followersInstagram || 0}
+
+Statistik Kinerja Kampanye/Konten Keseluruhan:
+- Total Tayangan (Views): ${totalViewsVal.toLocaleString('id-ID')}
+- Total Suka (Likes): ${totalLikesVal.toLocaleString('id-ID')}
+- Total Komentar: ${totalCommentsVal.toLocaleString('id-ID')}
+- Total Bagikan (Shares): ${totalSharesVal.toLocaleString('id-ID')}
+- Total Pendapatan (IDR): Rp ${totalEarningsVal.toLocaleString('id-ID')}
+- Rata-rata Engagement Rate (ER): ${avgER}%
 `;
 
   if (recentPosts.length > 0) {

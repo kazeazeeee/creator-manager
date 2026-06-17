@@ -86,6 +86,14 @@ export const apiSaveSettings = (settings) => request('/settings', {
   body: JSON.stringify(settings)
 });
 
+// Analytics
+export const apiGetAnalytics = () => request('/analytics');
+export const apiSaveAnalytics = (analytics) => request('/analytics', {
+  method: 'POST',
+  body: JSON.stringify(analytics)
+});
+
+
 // --- AI / Gemini Endpoints ---
 export const apiAnalyzeBrief = (briefText) => request('/ai/analyze-brief', {
   method: 'POST',
