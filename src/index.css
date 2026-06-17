@@ -844,6 +844,7 @@ textarea.form-control {
   
   body {
     background-color: transparent !important;
+    background-image: none !important;
     margin: 1.6cm !important;
   }
   
@@ -853,6 +854,9 @@ textarea.form-control {
     max-width: 100% !important;
     width: 100% !important;
     background-color: transparent !important;
+    transform: none !important;
+    animation: none !important;
+    opacity: 1 !important;
   }
   
   #print-section {

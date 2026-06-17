@@ -12,6 +12,7 @@ conn.on('ready', () => {
   const commands = [
     'cd /home/ubuntu/creator-manager',
     'git pull',
+    'npm install',
     'npm run build',
     'pm2 restart creator-manager',
     'pm2 list'

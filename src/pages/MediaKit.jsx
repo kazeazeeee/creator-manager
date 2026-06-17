@@ -473,8 +473,11 @@ const MediaKit = ({ profile, setProfile }) => {
   };
 
   return (
-    <div>
-      {/* Print-only Wrapper (Hidden on screen) */}
+    <div className="media-kit-container">
+      {/* 
+        The printable section is kept completely clean of App UI.
+        Only #print-section is shown when printing.
+      */}
       <div id="print-section" className="print-only">
         {renderPdfContent(false)}
       </div>
