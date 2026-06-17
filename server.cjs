@@ -795,8 +795,11 @@ app.post('/api/ai/chat', async (req, res) => {
   const profile = db.profile || {};
   const recentPosts = profile.recentPosts || [];
   const analytics = db.analytics || {};
+  const tasks = db.tasks || [];
+  const invoices = db.invoices || [];
+  const calendar = db.calendar || [];
 
-  // Compute overall statistics
+  // Compute overall analytics statistics
   const totalViewsVal = Object.values(analytics).reduce((sum, item) => sum + (item.views || 0), 0);
   const totalLikesVal = Object.values(analytics).reduce((sum, item) => sum + (item.likes || 0), 0);
   const totalCommentsVal = Object.values(analytics).reduce((sum, item) => sum + (item.comments || 0), 0);
@@ -805,40 +808,74 @@ app.post('/api/ai/chat', async (req, res) => {
   const totalEngagements = totalLikesVal + totalCommentsVal + totalSharesVal;
   const avgER = totalViewsVal > 0 ? ((totalEngagements / totalViewsVal) * 100).toFixed(2) : '0.00';
 
-  let creatorContext = `Informasi Profil Kreator:
+  // --- Build Creator Context (ALL app data) ---
+  let creatorContext = `=== INFORMASI PROFIL KREATOR ===
 - Nama: ${profile.name || 'Tidak diketahui'}
-- Niche/Kategori: ${profile.niche || 'Tidak diketahui'}
-- TikTok Handle/URL: ${profile.tiktok || 'Belum diatur'}
-- YouTube Handle/URL: ${profile.youtube || 'Belum diatur'}
-- Instagram Handle/URL: ${profile.instagram || 'Belum diatur'}
-- Email Bisnis: ${profile.email || 'Tidak diketahui'}
-- Pengikut (TikTok/YT/IG): ${profile.followersTiktok || 0} / ${profile.followersYoutube || 0} / ${profile.followersInstagram || 0}
+- Niche: ${profile.niche || 'Tidak diketahui'}
+- TikTok: ${profile.tiktok || '-'} | YouTube: ${profile.youtube || '-'} | Instagram: ${profile.instagram || '-'}
+- Email Bisnis: ${profile.email || '-'}
+- Rate Card: Rp ${(profile.rates || 0).toLocaleString('id-ID')}
+- Pengikut TikTok: ${profile.followersTiktok || 0} | YT: ${profile.followersYoutube || 0} | IG: ${profile.followersInstagram || 0}
 
-Statistik Kinerja Kampanye/Konten Keseluruhan:
-- Total Tayangan (Views): ${totalViewsVal.toLocaleString('id-ID')}
-- Total Suka (Likes): ${totalLikesVal.toLocaleString('id-ID')}
-- Total Komentar: ${totalCommentsVal.toLocaleString('id-ID')}
-- Total Bagikan (Shares): ${totalSharesVal.toLocaleString('id-ID')}
-- Total Pendapatan (IDR): Rp ${totalEarningsVal.toLocaleString('id-ID')}
-- Rata-rata Engagement Rate (ER): ${avgER}%
+=== STATISTIK KINERJA KESELURUHAN ===
+- Total Views: ${totalViewsVal.toLocaleString('id-ID')} | Likes: ${totalLikesVal.toLocaleString('id-ID')} | Komentar: ${totalCommentsVal.toLocaleString('id-ID')} | Shares: ${totalSharesVal.toLocaleString('id-ID')}
+- Total Pendapatan: Rp ${totalEarningsVal.toLocaleString('id-ID')}
+- Rata-rata ER: ${avgER}%
 `;
 
   if (recentPosts.length > 0) {
-    creatorContext += `\nPostingan Media Sosial Terakhir Kreator (Telah Disinkronisasi):`;
-    const latestPosts = recentPosts.slice(0, 5);
-    latestPosts.forEach((post, index) => {
-      creatorContext += `\n${index + 1}. [${post.platform}] "${post.title}" - Diunggah: ${post.uploadDate} - Views: ${post.views.toLocaleString('id-ID')} - Likes: ${post.likes.toLocaleString('id-ID')} - Komentar: ${post.comments.toLocaleString('id-ID')} - Link: ${post.url}`;
+    creatorContext += `\n=== POSTINGAN TERAKHIR ===`;
+    recentPosts.slice(0, 5).forEach((post, i) => {
+      creatorContext += `\n${i + 1}. [${post.platform}] "${post.title}" | ${post.uploadDate} | Views: ${(post.views||0).toLocaleString('id-ID')} | Likes: ${(post.likes||0).toLocaleString('id-ID')} | Komentar: ${(post.comments||0).toLocaleString('id-ID')}`;
     });
-  } else {
-    creatorContext += `\nKreator belum melakukan sinkronisasi postingan media sosial terakhirnya.`;
   }
 
-  let systemPrompt = `Anda adalah "Manajer Digital" pribadi sekaligus teman diskusi santai yang cerdas, suportif, dan fleksibel untuk seorang konten kreator.
-Selain membantu urusan bisnis/sponsorship/konten, Anda juga bisa menjadi teman ngobrol biasa, bertukar pikiran, curhat, bahkan bercanda secara natural menyesuaikan dengan mood dan kondisi Kreator.`;
+  if (tasks.length > 0) {
+    const statusLabels = { idea: 'Ide', planning: 'Perencanaan', production: 'Produksi', review: 'Review Brand', revision: 'Revisi', published: 'Tayang', calendar: 'Jadwal' };
+    creatorContext += `\n\n=== PIPELINE / ALUR KERJA KONTEN (${tasks.length} tugas) ===`;
+    tasks.slice(0, 10).forEach((t, i) => {
+      creatorContext += `\n${i + 1}. "${t.title}" | Brand: ${t.brand || '-'} | Platform: ${t.platform || '-'} | Status: ${statusLabels[t.status] || t.status} | Deadline: ${t.dueDate || '-'}`;
+    });
+    if (tasks.length > 10) creatorContext += `\n... dan ${tasks.length - 10} tugas lainnya.`;
+  }
 
-  if (agentRole) {
-    systemPrompt = `Anda adalah Agen AI spesialis peranan "${agentRole}" untuk seorang konten kreator.
-Tugas Anda adalah membantu mereka secara fokus sesuai keahlian peran spesifik Anda ini.`;
+  if (invoices.length > 0) {
+    creatorContext += `\n\n=== INVOICE & PEMBAYARAN (${invoices.length} invoice) ===`;
+    invoices.slice(0, 8).forEach((inv, i) => {
+      creatorContext += `\n${i + 1}. ${inv.id} | Klien: ${inv.clientName || '-'} | Proyek: ${inv.projectName || '-'} | Rp ${(inv.amount||0).toLocaleString('id-ID')} | Status: ${inv.status === 'paid' ? 'Lunas' : inv.status === 'pending' ? 'Belum Dibayar' : inv.status} | Jatuh Tempo: ${inv.dueDate || '-'}`;
+    });
+  }
+
+  if (calendar.length > 0) {
+    creatorContext += `\n\n=== AGENDA KALENDER (${calendar.length} agenda) ===`;
+    calendar.slice(0, 8).forEach((evt, i) => {
+      creatorContext += `\n${i + 1}. "${evt.title}" | Tanggal: ${evt.date || '-'} | Tipe: ${evt.type || '-'}`;
+    });
+  }
+
+  // --- System Prompt: base or specialized agent ---
+  const agentSpecializations = {
+    'Campaign Analyst': `Anda adalah "Campaign Analyst", agen spesialis analisis performa kampanye konten kreator. Keahlian: Membedah metrik (Views, Likes, ER, CPV, CPE), membandingkan kinerja antar-kampanye, mengidentifikasi tren, dan memberikan rekomendasi optimasi berbasis data riil.`,
+    'Campaign Analytics Agent': `Anda adalah "Campaign Analytics Agent", agen spesialis pelaporan data kampanye. Keahlian: Merangkum kinerja, menghitung ROI, menyusun laporan ringkasan eksekutif, dan memberikan insight berbasis data.`,
+    'Contract Guard': `Anda adalah "Contract Guard", agen spesialis perlindungan hukum kontrak kreator. Keahlian: Menganalisis pasal kontrak sponsorship, mengidentifikasi klausul berbahaya (eksklusivitas, hak cipta, denda, pembayaran), dan menyusun draf negosiasi tandingan yang adil.`,
+    'Diplomat Negotiator': `Anda adalah "Diplomat Negotiator", agen spesialis negosiasi bisnis dan komunikasi asertif. Keahlian: Menyusun balasan negosiasi rate card, menangani revisi berlebih, menolak tawaran secara sopan, dan membuat email profesional yang tegas.`,
+    'Sponsor Hunter': `Anda adalah "Sponsor Hunter", agen spesialis pencarian dan pendekatan sponsor. Keahlian: Mengidentifikasi brand potensial, menyusun proposal pitching, dan membuat email penawaran yang menarik berbasis data pengikut dan engagement.`,
+    'Creative Director': `Anda adalah "Creative Director", agen spesialis ide dan strategi kreatif konten. Keahlian: Mengembangkan konsep konten viral, menyusun skrip video, memberikan ide hook kuat, dan merancang strategi konten berdasarkan data performa terbaik.`,
+    'Trend Spotter': `Anda adalah "Trend Spotter", agen spesialis deteksi tren dan SEO konten. Keahlian: Mengidentifikasi tren media sosial, menyarankan hashtag dan keyword, menganalisis topik viral, dan merekomendasikan waktu posting optimal.`,
+    'PR Crisis Specialist': `Anda adalah "PR Crisis Specialist", agen spesialis manajemen krisis dan reputasi. Keahlian: Menyusun pernyataan resmi, menangani kontroversi, memberikan strategi komunikasi krisis, dan mengelola reputasi publik.`,
+    'Community Engagement Agent': `Anda adalah "Community Engagement Agent", agen spesialis interaksi komunitas. Keahlian: Menyusun balasan komentar yang witty dan engaging, mengelola interaksi audiens, dan meningkatkan loyalitas komunitas.`,
+    'Wellness Guard': `Anda adalah "Wellness Guard", agen spesialis kesehatan mental kreator. Keahlian: Mendeteksi tanda burnout, memberikan saran manajemen stres, membantu menyusun jadwal kerja sehat, dan menjadi pendengar yang empatik.`
+  };
+
+  let systemPrompt = '';
+  if (agentRole && agentSpecializations[agentRole]) {
+    systemPrompt = agentSpecializations[agentRole] + `\nAnda memiliki akses ke seluruh data kreator di bawah. Gunakan data tersebut untuk memberikan analisis dan saran yang spesifik.`;
+  } else if (agentRole) {
+    systemPrompt = `Anda adalah agen spesialis "${agentRole}" untuk seorang konten kreator. Bantu mereka sesuai keahlian peran Anda. Anda memiliki akses ke seluruh data kreator di bawah.`;
+  } else {
+    systemPrompt = `Anda adalah "Manajer Digital" pribadi sekaligus teman diskusi santai yang cerdas, suportif, dan fleksibel untuk seorang konten kreator.
+Selain membantu urusan bisnis/sponsorship/konten, Anda juga bisa menjadi teman ngobrol biasa, bertukar pikiran, curhat, bahkan bercanda secara natural menyesuaikan dengan mood dan kondisi Kreator.
+Anda memiliki AKSES PENUH ke seluruh data aplikasi kreator (profil, postingan, pipeline konten, invoice, kalender, dan statistik analitik). Gunakan data ini untuk menjawab pertanyaan secara akurat dan spesifik.`;
   }
 
   const prompt = `
@@ -847,16 +884,15 @@ ${systemPrompt}
 ${creatorContext}
 
 Aturan Penulisan & Format Balasan Anda:
-1. **Panjang Balasan & Efisiensi:** Berikan balasan yang **singkat, padat, dan efisien**. Hindari penjelasan yang terlalu panjang atau bertele-tele jika tidak diperlukan. Berikan penjelasan detail hanya bila diminta atau benar-benar krusial.
-2. **Bahasa & Gaya Menyesuaikan (Adaptif):** Sesuaikan gaya bicara dengan konteks pesan Kreator. 
-   - Jika membahas bisnis/kontrak formal, gunakan bahasa yang rapi, semi-formal, dan profesional.
-   - Jika Kreator sedang mengobrol santai, bercanda, atau curhat, balaslah dengan gaya bahasa kasual, hangat, bersahabat, dan selipkan candaan ringan yang relevan (hindari kesan kaku seperti robot).
-3. **Keterbacaan:** Tetap jaga kerapian tulisan. Gunakan cetak tebal (bold) pada bagian penting agar mudah dibaca sekilas. Gunakan list penomoran/poin hanya jika sedang memberikan daftar saran atau langkah-langkah konkret.
+1. **Singkat & Efisien:** Balas secara singkat dan padat. Detail panjang hanya jika diminta.
+2. **Gaya Adaptif:** Formal untuk bisnis, kasual untuk obrolan santai/bercanda.
+3. **Gunakan Data Riil:** Jika kreator tanya soal data mereka (postingan, views, invoice, jadwal, pipeline), SELALU jawab dari data di atas. JANGAN pernah bilang "tidak punya akses".
+4. **Keterbacaan:** Bold pada kata penting. List hanya jika perlu.
 
 Riwayat Percakapan:
 ${messagesFormatted}
 
-Tanggapan Baru Anda (Sesuaikan gaya, santai/profesional, singkat & tepat sasaran):
+Tanggapan Baru Anda (singkat & tepat sasaran):
 `;
 
   try {
