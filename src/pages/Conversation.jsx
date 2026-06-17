@@ -66,6 +66,12 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask, refreshAllData 
 
   const [copiedMsgIdx, setCopiedMsgIdx] = useState(null);
 
+  // Team Meeting states
+  const [teamMeetingMode, setTeamMeetingMode] = useState(false);
+  const [meetingAgent1, setMeetingAgent1] = useState('Brief Master');
+  const [meetingAgent2, setMeetingAgent2] = useState('Financial Coach');
+
+
   // Dynamic thinking status helper
   const thinkingStepsRef = useRef([]);
   const thinkingTimerRef = useRef(null);
@@ -489,26 +495,64 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask, refreshAllData 
     ];
 
     try {
-      if (!apiKey) {
-        // Simulated fallback response
-        await new Promise(resolve => setTimeout(resolve, 1500));
+      if (teamMeetingMode) {
+        // --- Team Meeting Mode Sequence ---
+        const cleanAgentName = (name) => `@${name.replace(/\s+/g, '')}`;
         
-        let reply = `Tentu! Saya siap membantu. Namun, agar saya bisa berpikir secara dinamis menggunakan kecerdasan buatan, mohon masukkan API Key Anda di menu Setelan terlebih dahulu.`;
-        
-        if (detectedAgentRole) {
-          reply = `[Simulasi Agen Spesialis: ${detectedAgentRole}]\n\nHalo! Saya adalah spesialis peranan **${detectedAgentRole}**. Saya mendeteksi Anda memanggil saya melalui mention **${detectedAgentMention}**.\n\nSebagai spesialis ${detectedAgentRole}, saya siap membantu Anda menyelesaikan masalah spesifik ini secara mendalam. Untuk mendapatkan jawaban yang disesuaikan secara dinamis oleh kecerdasan buatan saya, silakan masukkan API Key SumoPod di menu Setelan terlebih dahulu.\n\nSementara itu, pastikan draf atau pertanyaan Anda terkait peran saya sudah lengkap!`;
+        // 1. Agent 1 Turn
+        const thinkSteps1 = [
+          `👥 Rapat Tim: Memanggil ${cleanAgentName(meetingAgent1)}...`,
+          `🧠 ${cleanAgentName(meetingAgent1)} sedang mempelajari pesan...`,
+          `✍️ ${cleanAgentName(meetingAgent1)} menyusun tanggapan...`
+        ];
+        startThinkingAnimation(thinkSteps1);
+
+        let reply1 = '';
+        if (!apiKey) {
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          reply1 = `[Simulasi ${cleanAgentName(meetingAgent1)}]\n\nHalo! Saya telah mempelajari pesan Anda mengenai "${text}". Menurut perspektif saya, penting bagi kita untuk berfokus pada detail kesepakatan dan menyelaraskan deliverables. Mari kita dengar tanggapan dari rekan saya, ${cleanAgentName(meetingAgent2)}, untuk pembahasan lebih komprehensif.`;
         } else {
-          const textLowerCheck = text.toLowerCase();
-          if (textLowerCheck.includes('harga') || textLowerCheck.includes('rate card') || textLowerCheck.includes('nego')) {
-            reply = `Untuk negosiasi rate card, penting menjaga profesionalitas. Contoh balasan yang bisa Anda kirimkan:\n\n"Halo Tim Brand,\n\nTerima kasih atas tawarannya. Terkait anggaran kampanye, tarif standar kami untuk deliverables yang diminta adalah Rp${(creatorProfile?.rates || 5000000).toLocaleString('id-ID')}. Namun, kami terbuka untuk mendiskusikan penyesuaian deliverables agar selaras dengan budget Anda. Bagaimana menurut Anda?"\n\nAnda dapat mengoreksi draf ini sesuai kebutuhan.`;
-          } else if (textLowerCheck.includes('konten') || textLowerCheck.includes('ide')) {
-            reply = `Berikut 3 ide konten yang bisa Anda garap hari ini:\n\n1. **A Day in the Life of a Creator**: Tunjukkan di balik layar persiapan syuting dan editing secara estetik.\n2. **Review Jujur & Detail**: Bedah kelebihan dan kekurangan produk secara mendalam.\n3. **Tips & Trik Cepat**: Bagikan resep rahasia atau hack praktis di niche Anda.\n\nApakah Anda ingin saya membuatkan skrip untuk salah satunya?`;
-          } else if (textLowerCheck.includes('revisi') || textLowerCheck.includes('klien')) {
-            reply = `Menghadapi revisi berlebih sebaiknya dikomunikasikan secara asertif:\n\n"Halo Tim Klien,\n\nTerkait revisi tambahan yang diajukan, kami ingin mengonfirmasi bahwa batasan revisi gratis sesuai kesepakatan awal (brief) adalah 2 kali, yang telah kita penuhi. Untuk perubahan di luar itu, kami akan mengenakan biaya tambahan (revisi fee) sebesar 15% dari total nilai proyek per revisi. Mohon konfirmasinya sebelum kami melanjutkan."`;
-          }
+          const res1 = await apiChatWithManager(historyForApi, meetingAgent1);
+          reply1 = res1.reply;
         }
+
+        const msgAgent1 = { sender: 'assistant', senderName: cleanAgentName(meetingAgent1), text: reply1 };
+        const afterAgent1Messages = [...updatedMessagesForState, msgAgent1];
         
-        const finalMessages = [...updatedMessagesForState, { sender: 'assistant', text: reply }];
+        // Save Agent 1 reply
+        saveSessions(sessions.map(s => {
+          if (s.id === activeSessionId) {
+            return { ...s, messages: afterAgent1Messages };
+          }
+          return s;
+        }));
+
+        // 2. Agent 2 Turn
+        setLoading(true); // Keep loading active
+        const thinkSteps2 = [
+          `👥 Rapat Tim: Memanggil ${cleanAgentName(meetingAgent2)}...`,
+          `🧠 ${cleanAgentName(meetingAgent2)} membaca pendapat ${cleanAgentName(meetingAgent1)}...`,
+          `✍️ ${cleanAgentName(meetingAgent2)} memberikan opini pelengkap...`
+        ];
+        startThinkingAnimation(thinkSteps2);
+
+        let reply2 = '';
+        if (!apiKey) {
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          reply2 = `[Simulasi ${cleanAgentName(meetingAgent2)}]\n\nHalo Kreator! Menambahkan poin dari rekan saya ${cleanAgentName(meetingAgent1)}, saya setuju bahwa aspek tersebut krusial. Dari sudut pandang spesialisasi saya sebagai **${meetingAgent2}**, kita harus memastikan bahwa rate card telah dioptimalkan dengan adil, dan semua tagihan invoice dipantau statusnya agar cashflow tetap aman. Apakah draf balasan atau skrip ini sudah sesuai keinginan Anda?`;
+        } else {
+          // Pass the conversation with Agent 1's reply to Agent 2
+          const historyForAgent2 = [
+            ...historyForApi,
+            { sender: 'assistant', text: `${cleanAgentName(meetingAgent1)}: ${reply1}` }
+          ];
+          const res2 = await apiChatWithManager(historyForAgent2, meetingAgent2);
+          reply2 = res2.reply;
+        }
+
+        const msgAgent2 = { sender: 'assistant', senderName: cleanAgentName(meetingAgent2), text: reply2 };
+        const finalMessages = [...afterAgent1Messages, msgAgent2];
+
         saveSessions(sessions.map(s => {
           if (s.id === activeSessionId) {
             return { ...s, messages: finalMessages };
@@ -516,17 +560,46 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask, refreshAllData 
           return s;
         }));
       } else {
-        const res = await apiChatWithManager(historyForApi, detectedAgentRole);
-        if (res.actionExecuted && refreshAllData) {
-          refreshAllData();
-        }
-        const finalMessages = [...updatedMessagesForState, { sender: 'assistant', text: res.reply }];
-        saveSessions(sessions.map(s => {
-          if (s.id === activeSessionId) {
-            return { ...s, messages: finalMessages };
+        // --- Normal Single Agent Flow ---
+        if (!apiKey) {
+          // Simulated fallback response
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          
+          let reply = `Tentu! Saya siap membantu. Namun, agar saya bisa berpikir secara dinamis menggunakan kecerdasan buatan, mohon masukkan API Key Anda di menu Setelan terlebih dahulu.`;
+          
+          if (detectedAgentRole) {
+            reply = `[Simulasi Agen Spesialis: ${detectedAgentRole}]\n\nHalo! Saya adalah spesialis peranan **${detectedAgentRole}**. Saya mendeteksi Anda memanggil saya melalui mention **${detectedAgentMention}**.\n\nSebagai spesialis ${detectedAgentRole}, saya siap membantu Anda menyelesaikan masalah spesifik ini secara mendalam. Untuk mendapatkan jawaban yang disesuaikan secara dinamis oleh kecerdasan buatan saya, silakan masukkan API Key SumoPod di menu Setelan terlebih dahulu.\n\nSementara itu, pastikan draf atau pertanyaan Anda terkait peran saya sudah lengkap!`;
+          } else {
+            const textLowerCheck = text.toLowerCase();
+            if (textLowerCheck.includes('harga') || textLowerCheck.includes('rate card') || textLowerCheck.includes('nego')) {
+              reply = `Untuk negosiasi rate card, penting menjaga profesionalitas. Contoh balasan yang bisa Anda kirimkan:\n\n"Halo Tim Brand,\n\nTerima kasih atas tawarannya. Terkait anggaran kampanye, tarif standar kami untuk deliverables yang diminta adalah Rp${(creatorProfile?.rates || 5000000).toLocaleString('id-ID')}. Namun, kami terbuka untuk mendiskusikan penyesuaian deliverables agar selaras dengan budget Anda. Bagaimana menurut Anda?"\n\nAnda dapat mengoreksi draf ini sesuai kebutuhan.`;
+            } else if (textLowerCheck.includes('konten') || textLowerCheck.includes('ide')) {
+              reply = `Berikut 3 ide konten yang bisa Anda garap hari ini:\n\n1. **A Day in the Life of a Creator**: Tunjukkan di balik layar persiapan syuting dan editing secara estetik.\n2. **Review Jujur & Detail**: Bedah kelebihan dan kekurangan produk secara mendalam.\n3. **Tips & Trik Cepat**: Bagikan resep rahasia atau hack praktis di niche Anda.\n\nApakah Anda ingin saya membuatkan skrip untuk salah satunya?`;
+            } else if (textLowerCheck.includes('revisi') || textLowerCheck.includes('klien')) {
+              reply = `Menghadapi revisi berlebih sebaiknya dikomunikasikan secara asertif:\n\n"Halo Tim Klien,\n\nTerkait revisi tambahan yang diajukan, kami ingin mengonfirmasi bahwa batasan revisi gratis sesuai kesepakatan awal (brief) adalah 2 kali, yang telah kita penuhi. Untuk perubahan di luar itu, kami akan mengenakan biaya tambahan (revisi fee) sebesar 15% dari total nilai proyek per revisi. Mohon konfirmasinya sebelum kami melanjutkan."`;
+            }
           }
-          return s;
-        }));
+          
+          const finalMessages = [...updatedMessagesForState, { sender: 'assistant', text: reply }];
+          saveSessions(sessions.map(s => {
+            if (s.id === activeSessionId) {
+              return { ...s, messages: finalMessages };
+            }
+            return s;
+          }));
+        } else {
+          const res = await apiChatWithManager(historyForApi, detectedAgentRole);
+          if (res.actionExecuted && refreshAllData) {
+            refreshAllData();
+          }
+          const finalMessages = [...updatedMessagesForState, { sender: 'assistant', text: res.reply }];
+          saveSessions(sessions.map(s => {
+            if (s.id === activeSessionId) {
+              return { ...s, messages: finalMessages };
+            }
+            return s;
+          }));
+        }
       }
     } catch (err) {
       console.error(err);
@@ -887,10 +960,67 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask, refreshAllData 
 
           {activeSession ? (
             <>
-              <div className="chat-area-header">
+              <div className="chat-area-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                 <div className="chat-area-title">
                   <h3>{activeSession.title}</h3>
                   <p>{activeSession.messages.length} pesan dalam diskusi ini</p>
+                </div>
+
+                {/* Team Meeting Selector */}
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '8px', 
+                  border: '1px solid var(--border-color)', 
+                  padding: '6px 12px', 
+                  borderRadius: 'var(--border-radius-md)', 
+                  backgroundColor: 'var(--bg-tertiary)',
+                  flexWrap: 'wrap'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <input 
+                      type="checkbox" 
+                      id="team-meeting-toggle"
+                      checked={teamMeetingMode} 
+                      onChange={(e) => setTeamMeetingMode(e.target.checked)}
+                      style={{ cursor: 'pointer', accentColor: 'var(--accent-color)' }}
+                    />
+                    <label htmlFor="team-meeting-toggle" style={{ fontSize: '11.5px', fontWeight: '700', color: teamMeetingMode ? 'var(--text-primary)' : 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      👥 Rapat Tim AI
+                    </label>
+                  </div>
+
+                  {teamMeetingMode && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '6px', flexWrap: 'wrap' }}>
+                      <select 
+                        value={meetingAgent1} 
+                        onChange={(e) => setMeetingAgent1(e.target.value)}
+                        style={{ fontSize: '10.5px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '2px 4px', borderRadius: '4px', outline: 'none' }}
+                      >
+                        <option value="Brief Master">@BriefMaster</option>
+                        <option value="Financial Coach">@FinancialCoach</option>
+                        <option value="Contract Guard">@ContractGuard</option>
+                        <option value="Creative Director">@CreativeDirector</option>
+                        <option value="Diplomat Negotiator">@DiplomatNegotiator</option>
+                        <option value="Sponsor Hunter">@SponsorHunter</option>
+                        <option value="Trend Spotter">@TrendSpotter</option>
+                      </select>
+                      <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>&</span>
+                      <select 
+                        value={meetingAgent2} 
+                        onChange={(e) => setMeetingAgent2(e.target.value)}
+                        style={{ fontSize: '10.5px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '2px 4px', borderRadius: '4px', outline: 'none' }}
+                      >
+                        <option value="Financial Coach">@FinancialCoach</option>
+                        <option value="Brief Master">@BriefMaster</option>
+                        <option value="Contract Guard">@ContractGuard</option>
+                        <option value="Creative Director">@CreativeDirector</option>
+                        <option value="Diplomat Negotiator">@DiplomatNegotiator</option>
+                        <option value="Sponsor Hunter">@SponsorHunter</option>
+                        <option value="Trend Spotter">@TrendSpotter</option>
+                      </select>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -898,7 +1028,7 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask, refreshAllData 
                 {activeSession.messages.map((msg, idx) => (
                   <div key={idx} className={`message-bubble-wrapper ${msg.sender}`}>
                     <span className="message-sender">
-                      {msg.sender === 'user' ? (creatorProfile?.name || 'Kreator') : 'Manajer Digital'}
+                      {msg.sender === 'user' ? (creatorProfile?.name || 'Kreator') : (msg.senderName || 'Manajer Digital')}
                     </span>
                     <div className="message-bubble">
                       {formatMessageText(msg.text)}

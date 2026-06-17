@@ -226,5 +226,13 @@ export const apiAnalyzeClause = (clauseText) => request('/ai/analyze-clause', {
   body: JSON.stringify({ clauseText })
 });
 
+export const apiGetBriefing = () => request('/ai/briefing');
+
+export const apiOptimizeRates = (targetIncome) => request('/ai/optimize-rates', {
+  method: 'POST',
+  body: JSON.stringify({ targetIncome })
+});
+
+
 
 

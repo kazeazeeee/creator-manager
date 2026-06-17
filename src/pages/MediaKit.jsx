@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Image, Plus, Trash, Download, Check, Save, Mail, ExternalLink, Sparkles, Send, Copy } from 'lucide-react';
 import { formatCurrency } from '../utils/helpers';
-import { apiGetProfile, apiSaveProfile, apiGeneratePitch } from '../utils/api';
+import { apiGetProfile, apiSaveProfile, apiGeneratePitch, apiOptimizeRates } from '../utils/api';
 
 const MediaKit = ({ profile, setProfile }) => {
   const parseFollowers = (str) => {
@@ -61,6 +61,63 @@ const MediaKit = ({ profile, setProfile }) => {
   
   const [copiedSubject, setCopiedSubject] = useState(false);
   const [copiedBody, setCopiedBody] = useState(false);
+
+  // AI Rate Optimizer states
+  const [targetIncomeVal, setTargetIncomeVal] = useState('15000000');
+  const [optimizeLoading, setOptimizeLoading] = useState(false);
+  const [optResult, setOptResult] = useState(null);
+  const [applySuccess, setApplySuccess] = useState(false);
+
+  const handleOptimizeRates = async () => {
+    const target = parseInt(targetIncomeVal);
+    if (isNaN(target) || target <= 0) {
+      alert('Harap masukkan target pendapatan bulanan yang valid.');
+      return;
+    }
+
+    setOptimizeLoading(true);
+    setOptResult(null);
+    setApplySuccess(false);
+
+    try {
+      const res = await apiOptimizeRates(target);
+      if (res && res.recommendedRates) {
+        setOptResult(res);
+      } else {
+        throw new Error('Hasil analisis tidak lengkap.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert(`Gagal optimasi: ${err.message || 'Error tidak diketahui'}`);
+    } finally {
+      setOptimizeLoading(false);
+    }
+  };
+
+  const handleApplyRecommendedRates = async () => {
+    if (!optResult || !optResult.recommendedRates) return;
+    
+    const newRatesList = optResult.recommendedRates.map(item => ({
+      service: item.service,
+      rate: item.rate
+    }));
+
+    const updatedProfile = {
+      ...formProfile,
+      ratesList: newRatesList
+    };
+
+    try {
+      await apiSaveProfile(updatedProfile);
+      setFormProfile(updatedProfile);
+      setProfile(updatedProfile);
+      setApplySuccess(true);
+      setTimeout(() => setApplySuccess(false), 3000);
+    } catch (err) {
+      alert(`Gagal menerapkan tarif baru: ${err.message}`);
+    }
+  };
+
 
   useEffect(() => {
     if (profile) {
@@ -616,6 +673,147 @@ const MediaKit = ({ profile, setProfile }) => {
               )}
             </div>
           )}
+
+          {/* AI Rate Card & Target Income Optimizer Panel */}
+          {!editing && (
+            <div className="card" style={{ gridColumn: 'span 2', marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                  <Sparkles size={18} className="text-accent" style={{ color: 'var(--accent-color)' }} /> Kalkulator Optimalisasi Pendapatan & Rate Card (AI)
+                </h3>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>Masukkan target pendapatan bulanan Anda untuk merancang struktur rate card optimal berdasarkan metrik akun Anda.</p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                <div className="form-group" style={{ flexGrow: 1, minWidth: '200px', marginBottom: 0 }}>
+                  <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)' }}>TARGET PENDAPATAN BULANAN (NET - {formProfile.currency || 'IDR'})</label>
+                  <input 
+                    type="number" 
+                    className="form-control" 
+                    value={targetIncomeVal}
+                    onChange={(e) => setTargetIncomeVal(e.target.value)}
+                    placeholder="misal: 15000000"
+                  />
+                </div>
+                <button 
+                  className="btn btn-primary" 
+                  onClick={handleOptimizeRates}
+                  disabled={optimizeLoading || !targetIncomeVal}
+                  style={{ height: '38px', minWidth: '160px' }}
+                >
+                  {optimizeLoading ? 'Mengoptimalkan...' : 'Optimalkan Rate Card'}
+                </button>
+              </div>
+
+              {optResult && (
+                <div style={{ 
+                  marginTop: '12px',
+                  padding: '18px',
+                  borderRadius: 'var(--border-radius-md)',
+                  backgroundColor: 'var(--bg-tertiary)',
+                  border: '1px solid var(--border-color)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '20px'
+                }}>
+                  {/* Analysis Text */}
+                  <div>
+                    <h4 style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '6px' }}>Analisis Kelayakan AI</h4>
+                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5', margin: 0 }}>{optResult.analysis}</p>
+                  </div>
+
+                  {/* Recommended Rates Table */}
+                  <div>
+                    <h4 style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>Rekomendasi Tarif Per Postingan</h4>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', textAlign: 'left' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                            <th style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--text-secondary)' }}>Jasa Layanan</th>
+                            <th style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'right' }}>Tarif Rekomendasi AI</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {optResult.recommendedRates.map((item, idx) => (
+                            <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                              <td style={{ padding: '8px 12px', color: 'var(--text-primary)', fontWeight: '500' }}>{item.service}</td>
+                              <td style={{ padding: '8px 12px', color: 'var(--success-color)', fontWeight: '600', textAlign: 'right' }}>
+                                {formatCurrency(item.rate, formProfile.currency)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Monthly Action Plan Table */}
+                  <div>
+                    <h4 style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>Rencana Kerja Bulanan Untuk Target</h4>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', textAlign: 'left' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                            <th style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--text-secondary)' }}>Deliverable</th>
+                            <th style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'right' }}>Tarif</th>
+                            <th style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'center' }}>Jumlah Post</th>
+                            <th style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'right' }}>Subtotal</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {optResult.monthlyPlan.map((item, idx) => (
+                            <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                              <td style={{ padding: '8px 12px', color: 'var(--text-primary)' }}>{item.item}</td>
+                              <td style={{ padding: '8px 12px', color: 'var(--text-secondary)', textAlign: 'right' }}>{formatCurrency(item.rate, formProfile.currency)}</td>
+                              <td style={{ padding: '8px 12px', color: 'var(--text-primary)', textAlign: 'center', fontWeight: '600' }}>{item.quantity}x</td>
+                              <td style={{ padding: '8px 12px', color: 'var(--success-color)', fontWeight: '600', textAlign: 'right' }}>{formatCurrency(item.subtotal, formProfile.currency)}</td>
+                            </tr>
+                          ))}
+                          <tr style={{ borderTop: '1.5px solid var(--border-color)' }}>
+                            <td colSpan="3" style={{ padding: '10px 12px', fontWeight: '700', color: 'var(--text-primary)' }}>Estimasi Pendapatan Kotor Bulanan</td>
+                            <td style={{ padding: '10px 12px', fontWeight: '700', color: 'var(--success-color)', textAlign: 'right', fontSize: '14.5px' }}>
+                              {formatCurrency(optResult.totalEstimated, formProfile.currency)}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Action Tips */}
+                  <div>
+                    <h4 style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>Rekomendasi Bisnis & Negosiasi AI</h4>
+                    <ul style={{ paddingLeft: '18px', margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {optResult.actionTips.map((tip, idx) => (
+                        <li key={idx} style={{ fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{tip}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Apply Rates Button */}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '14px' }}>
+                    <button 
+                      className={`btn ${applySuccess ? 'btn-secondary' : 'btn-primary'}`}
+                      onClick={handleApplyRecommendedRates}
+                      disabled={applySuccess}
+                      style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', padding: '8px 16px' }}
+                    >
+                      {applySuccess ? (
+                        <>
+                          <Check size={14} style={{ color: 'var(--success-color)' }} /> Tarif Baru Berhasil Diterapkan!
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles size={14} /> Terapkan Rekomendasi Tarif AI Ke Media Kit
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
 
         </div>
       </div>

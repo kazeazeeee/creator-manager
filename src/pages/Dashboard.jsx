@@ -11,10 +11,11 @@ import {
   Sparkles,
   RefreshCw,
   Plus,
-  Check
+  Check,
+  Coffee
 } from 'lucide-react';
 import { formatCurrency } from '../utils/helpers';
-import { apiGetDailyIdea, apiSyncSocialMetrics } from '../utils/api';
+import { apiGetDailyIdea, apiSyncSocialMetrics, apiGetBriefing } from '../utils/api';
 const formatText = (text) => {
   if (!text) return null;
   return text.split('\n').map((line, idx) => {
@@ -54,6 +55,32 @@ const Dashboard = ({
   profile = {},
   setProfile
 }) => {
+  const [briefingText, setBriefingText] = useState(null);
+  const [loadingBriefing, setLoadingBriefing] = useState(false);
+  const [errorBriefing, setErrorBriefing] = useState(null);
+
+  const loadBriefing = async () => {
+    setLoadingBriefing(true);
+    setErrorBriefing(null);
+    try {
+      const res = await apiGetBriefing();
+      if (res && res.briefing) {
+        setBriefingText(res.briefing);
+      } else {
+        throw new Error("Gagal memuat briefing harian.");
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorBriefing(err.message || "Gagal memuat briefing.");
+    } finally {
+      setLoadingBriefing(false);
+    }
+  };
+
+  useEffect(() => {
+    loadBriefing();
+  }, []);
+
   const [syncingSocials, setSyncingSocials] = useState(false);
   const [syncError, setSyncError] = useState(null);
 
@@ -188,6 +215,71 @@ const Dashboard = ({
         <div className="content-title">
           <h1>Ringkasan Dasbor</h1>
           <p>Pantau status finansial, jadwal, dan tenggat waktu konten Anda.</p>
+        </div>
+      </div>
+
+      {/* Morning Briefing Card */}
+      <div className="card" style={{ 
+        marginBottom: '24px', 
+        position: 'relative', 
+        overflow: 'hidden',
+        background: 'linear-gradient(135deg, rgba(24, 26, 31, 0.9) 0%, rgba(53, 90, 102, 0.2) 100%)',
+        border: '1.5px solid var(--border-color)',
+        padding: '20px'
+      }}>
+        <div style={{
+          position: 'absolute',
+          top: '-40px',
+          left: '-40px',
+          width: '120px',
+          height: '120px',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, transparent 70%)',
+          zIndex: 0,
+          pointerEvents: 'none'
+        }} />
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', position: 'relative', zIndex: 1 }}>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', margin: 0, color: 'var(--text-primary)' }}>
+            <Coffee size={16} style={{ color: 'var(--accent-color)' }} /> Briefing Pagi Manajer
+          </h3>
+          <button 
+            className="btn btn-secondary" 
+            style={{ padding: '4px 10px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px' }}
+            onClick={loadBriefing}
+            disabled={loadingBriefing}
+          >
+            <RefreshCw size={11} className={loadingBriefing ? 'spin-animation' : ''} />
+            {loadingBriefing ? 'Memuat...' : 'Perbarui'}
+          </button>
+        </div>
+
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          {loadingBriefing ? (
+            <div style={{ padding: '12px 0', display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-secondary)' }}>
+              <RefreshCw className="spin-animation" size={13} style={{ color: 'var(--accent-color)' }} />
+              <span style={{ fontSize: '13px' }}>Manajer sedang merangkum status hari ini...</span>
+            </div>
+          ) : errorBriefing ? (
+            <div style={{ padding: '8px 12px', borderRadius: '4px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', fontSize: '12.5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>⚠️ {errorBriefing}</span>
+              <button className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: '10.5px', borderColor: 'rgba(239, 68, 68, 0.2)' }} onClick={loadBriefing}>Coba Lagi</button>
+            </div>
+          ) : briefingText ? (
+            <div style={{ 
+              fontSize: '13.5px', 
+              color: 'var(--text-secondary)', 
+              lineHeight: '1.6',
+              backgroundColor: 'rgba(17, 17, 17, 0.4)',
+              padding: '14px 16px',
+              borderRadius: 'var(--border-radius-sm)',
+              border: '1.5px solid var(--border-color)'
+            }}>
+              {formatText(briefingText)}
+            </div>
+          ) : (
+            <div style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Belum ada briefing hari ini.</div>
+          )}
         </div>
       </div>
 

@@ -1458,7 +1458,177 @@ Kembalikan hasilnya dalam format JSON yang valid dengan struktur berikut (tulisk
   }
 });
 
+// 12b. AI Daily Manager Briefing Agent
+app.get('/api/ai/briefing', async (req, res) => {
+  const db = readDb();
+  const apiKey = getApiKey(db);
+  const models = getModels(db);
+  const selectedModel = models.biasa || 'deepseek-v4-flash';
+
+  const profile = db.profile || {};
+  const tasks = db.tasks || [];
+  const invoices = db.invoices || [];
+  const calendar = db.calendar || [];
+
+  // Calculations
+  const activeTasks = tasks.filter(t => t.status !== 'published');
+  const urgentTasks = tasks.filter(t => {
+    if (t.status === 'published') return false;
+    const today = new Date();
+    const due = new Date(t.dueDate);
+    const diff = due - today;
+    const diffDays = Math.ceil(diff / 86400000);
+    return diffDays >= 0 && diffDays <= 3;
+  });
+  const pendingInvoices = invoices.filter(inv => inv.status === 'pending' || inv.status === 'overdue');
+  const upcomingEvents = calendar.slice(0, 3);
+
+  const prompt = `Anda adalah "Manajer Digital" pribadi sekaligus teman diskusi santai konten kreator bernama ${profile.name || 'Kreator'}.
+Berikan sapaan pagi dan briefing singkat yang ramah, hangat, kasual (seperti teman dekat sendiri), dan sangat menyemangati berdasarkan status workspace saat ini:
+- Jumlah tugas aktif: ${activeTasks.length} tugas
+- Tugas mendesak (deadline <= 3 hari): ${urgentTasks.length} tugas
+- Invoice belum lunas: ${pendingInvoices.length} invoice
+- Jadwal kalender terdekat: ${upcomingEvents.map(e => `"${e.title}" (${e.start})`).join(', ') || 'Tidak ada'}
+
+Aturan Penulisan:
+1. Mulai dengan sapaan akrab (misal: "Halo Urufa! Pagi yang cerah. Kopi sudah siap, ini briefing singkatmu hari ini...").
+2. Berikan 3 poin ringkas rekomendasi prioritas tindakan hari ini menggunakan bullet points (-).
+3. Buat nada bicara santai, bersahabat, memberi dorongan positif, dan jangan kaku seperti robot. Jaga agar tetap pendek (kurang dari 100 kata).
+`;
+
+  try {
+    if (!apiKey) {
+      const greeting = `Halo ${profile.name || 'Kreator'}! Selamat pagi. Kopi sudah siap, mari kita cek prioritas hari ini:`;
+      const points = [
+        `Ada ${activeTasks.length} proyek aktif yang sedang berjalan di alur kerja.`,
+        urgentTasks.length > 0 ? `Perhatian! Ada ${urgentTasks.length} tugas mendesak mendekati deadline.` : `Kerja bagus! Tidak ada tugas mendesak untuk 3 hari ke depan.`,
+        pendingInvoices.length > 0 ? `Ada ${pendingInvoices.length} invoice pending yang perlu Anda tindak lanjuti.` : `Semua tagihan/invoice aman terjaga.`
+      ];
+      return res.json({ briefing: `${greeting}\n- ${points.join('\n- ')}` });
+    }
+
+    const aiResponse = await callSumopod(prompt, apiKey, selectedModel, false);
+    res.json({ briefing: aiResponse });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 12c. AI Rate Optimizer
+app.post('/api/ai/optimize-rates', async (req, res) => {
+  const db = readDb();
+  const apiKey = getApiKey(db);
+  const models = getModels(db);
+  const selectedModel = models.biasa || 'deepseek-v4-flash';
+
+  const { targetIncome } = req.body;
+  const profile = db.profile || {};
+  const niche = profile.niche || 'Kuliner / Food';
+  const currency = profile.currency || 'IDR';
+
+  // Gather social metrics
+  const igFollowers = profile.instagramFollowers || '0';
+  const ttFollowers = profile.tiktokFollowers || '0';
+  const ytFollowers = profile.youtubeFollowers || '0';
+  
+  // Calculate average ER
+  const analytics = db.analytics || {};
+  const totalViewsVal = Object.values(analytics).reduce((sum, item) => sum + (item.views || 0), 0);
+  const totalLikesVal = Object.values(analytics).reduce((sum, item) => sum + (item.likes || 0), 0);
+  const totalCommentsVal = Object.values(analytics).reduce((sum, item) => sum + (item.comments || 0), 0);
+  const totalSharesVal = Object.values(analytics).reduce((sum, item) => sum + (item.shares || 0), 0);
+  const totalEngagements = totalLikesVal + totalCommentsVal + totalSharesVal;
+  const avgER = totalViewsVal > 0 ? ((totalEngagements / totalViewsVal) * 100).toFixed(2) : '4.8';
+
+  const prompt = `Anda adalah "AI Rate Optimizer", penasihat bisnis khusus konten kreator.
+Analisis data berikut untuk merancang tarif rate card baru yang adil bagi kreator namun tetap kompetitif bagi brand, serta susun rencana jumlah postingan bulanan agar target pendapatan bulanan tercapai secara realistis.
+
+DATA KREATOR:
+- Target Pendapatan Bulanan: ${currency} ${targetIncome.toLocaleString('id-ID')}
+- Niche Kreator: ${niche}
+- Followers: Instagram: ${igFollowers} | TikTok: ${ttFollowers} | YouTube: ${ytFollowers}
+- Rata-rata Engagement Rate (ER): ${avgER}%
+
+Format respons wajib berupa JSON valid (tanpa markdown wrap, tanpa teks lain di luar JSON) dengan struktur:
+{
+  "analysis": "Penjelasan singkat mengenai kelayakan target pendapatan bulanan dengan metrik pengikut dan ER saat ini...",
+  "recommendedRates": [
+    { "service": "1x Instagram Reels", "rate": number },
+    { "service": "3x Instagram Story Frames", "rate": number },
+    { "service": "1x TikTok Video Post", "rate": number },
+    { "service": "1x YouTube Video Integration", "rate": number }
+  ],
+  "monthlyPlan": [
+    { "item": "1x Instagram Reels", "rate": number, "quantity": number, "subtotal": number },
+    { "item": "1x TikTok Video Post", "rate": number, "quantity": number, "subtotal": number }
+  ],
+  "totalEstimated": number,
+  "actionTips": [
+    "Tips konkret 1 untuk meningkatkan nilai tawar...",
+    "Tips konkret 2 untuk meningkatkan engagement rate..."
+  ]
+}
+`;
+
+  try {
+    if (!apiKey) {
+      // Local Simulated Fallback
+      const baseVal = parseInt(targetIncome) || 10000000;
+      const igPostRate = Math.max(1000000, Math.round(baseVal * 0.15));
+      const igStoryRate = Math.max(500000, Math.round(baseVal * 0.08));
+      const ttPostRate = Math.max(1200000, Math.round(baseVal * 0.20));
+      const ytVideoRate = Math.max(2500000, Math.round(baseVal * 0.35));
+      
+      const qtyIg = Math.max(1, Math.round((baseVal * 0.2) / igPostRate)) || 2;
+      const qtyStory = Math.max(2, Math.round((baseVal * 0.15) / igStoryRate)) || 4;
+      const qtyTt = Math.max(1, Math.round((baseVal * 0.35) / ttPostRate)) || 3;
+      const qtyYt = Math.max(1, Math.round((baseVal * 0.3) / ytVideoRate)) || 1;
+      
+      const subIg = igPostRate * qtyIg;
+      const subStory = igStoryRate * qtyStory;
+      const subTt = ttPostRate * qtyTt;
+      const subYt = ytVideoRate * qtyYt;
+      
+      const fallbackResult = {
+        analysis: `Mengingat niche Anda adalah ${niche} dengan estimasi ER sebesar ${avgER}%, target bulanan sebesar Rp ${baseVal.toLocaleString('id-ID')} sangat layak dicapai dengan mendistribusikan penawaran jasa di berbagai platform media sosial Anda. Berikut simulasi estimasi tarif optimal:`,
+        recommendedRates: [
+          { service: '1x Instagram Reels', rate: igPostRate },
+          { service: '3x Instagram Story Frames', rate: igStoryRate },
+          { service: '1x TikTok Video Post', rate: ttPostRate },
+          { service: '1x YouTube Video Integration', rate: ytVideoRate }
+        ],
+        monthlyPlan: [
+          { item: '1x Instagram Reels', rate: igPostRate, quantity: qtyIg, subtotal: subIg },
+          { item: '3x Instagram Story Frames', rate: igStoryRate, quantity: qtyStory, subtotal: subStory },
+          { item: '1x TikTok Video Post', rate: ttPostRate, quantity: qtyTt, subtotal: subTt },
+          { item: '1x YouTube Video Integration', rate: ytVideoRate, quantity: qtyYt, subtotal: subYt }
+        ],
+        totalEstimated: subIg + subStory + subTt + subYt,
+        actionTips: [
+          'Tawarkan diskon paket bundling (misal: 3x posting TikTok + 1x Instagram Reels) dengan potongan 10-15% bagi brand dengan durasi kerja sama 3 bulan.',
+          'Selalu cantumkan data insight demografi audiens terbaru Anda untuk meyakinkan sponsor lokal.'
+        ]
+      };
+      
+      return res.json(fallbackResult);
+    }
+
+    const aiResponse = await callSumopod(prompt, apiKey, selectedModel, true);
+    let cleaned = aiResponse.trim();
+    if (cleaned.startsWith('```')) {
+      cleaned = cleaned.replace(/^```json\s*/, '').replace(/```$/, '').trim();
+    }
+    const result = JSON.parse(cleaned);
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 13. AI Content Performance Predictor
+
 app.post('/api/ai/predict-performance', async (req, res) => {
   const db = readDb();
   const apiKey = getApiKey(db);
