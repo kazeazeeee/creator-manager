@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, Users, Heart, MessageSquare, Eye, Save, DollarSign, RefreshCw, Sparkles } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, Heart, MessageSquare, Eye, Save, DollarSign, RefreshCw, Sparkles, Plus, Trash2 } from 'lucide-react';
 import { formatCurrency } from '../utils/helpers';
-import { apiGetTasks, apiUpdateTask, apiSyncRecentPosts, apiGetAnalytics, apiSaveAnalytics } from '../utils/api';
+import { apiGetTasks, apiUpdateTask, apiSyncRecentPosts, apiGetAnalytics, apiSaveAnalytics, apiSaveProfile } from '../utils/api';
 
 const MOCK_ANALYTICS_TREND = [
   { brand: 'Wardah Beauty', title: 'Cushion Review', views: 125000, earnings: 4500000 },
@@ -27,6 +27,68 @@ const Analytics = ({ pipelineTasks = [], setPipelineTasks, profile = {}, setProf
   const [syncingPosts, setSyncingPosts] = useState(false);
   const [syncError, setSyncError] = useState(null);
   const [activePlatformFilter, setActivePlatformFilter] = useState('Semua');
+
+  // Manual post management states and handlers
+  const [showAddPostModal, setShowAddPostModal] = useState(false);
+  const [newPost, setNewPost] = useState({
+    platform: 'TikTok',
+    title: '',
+    url: '',
+    uploadDate: new Date().toISOString().split('T')[0],
+    views: 0,
+    likes: 0,
+    comments: 0,
+    thumbnail: ''
+  });
+
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm("Apakah Anda yakin ingin menghapus postingan ini dari media kit?")) return;
+    const updatedPosts = (profile.recentPosts || []).filter(p => p.id !== postId);
+    const updatedProfile = { ...profile, recentPosts: updatedPosts };
+    setProfile(updatedProfile);
+    try {
+      await apiSaveProfile(updatedProfile);
+    } catch (err) {
+      console.error("Failed to delete post:", err);
+      alert("Gagal menyimpan perubahan ke server.");
+    }
+  };
+
+  const handleAddPostSubmit = async (e) => {
+    e.preventDefault();
+    if (!newPost.title.trim()) {
+      alert("Judul konten wajib diisi!");
+      return;
+    }
+    const createdPost = {
+      ...newPost,
+      id: `${newPost.platform.toLowerCase()}-manual-${Date.now()}`,
+      views: parseInt(newPost.views) || 0,
+      likes: parseInt(newPost.likes) || 0,
+      comments: parseInt(newPost.comments) || 0
+    };
+    const updatedPosts = [createdPost, ...(profile.recentPosts || [])];
+    const updatedProfile = { ...profile, recentPosts: updatedPosts };
+    setProfile(updatedProfile);
+    setShowAddPostModal(false);
+    // reset form
+    setNewPost({
+      platform: 'TikTok',
+      title: '',
+      url: '',
+      uploadDate: new Date().toISOString().split('T')[0],
+      views: 0,
+      likes: 0,
+      comments: 0,
+      thumbnail: ''
+    });
+    try {
+      await apiSaveProfile(updatedProfile);
+    } catch (err) {
+      console.error("Failed to save new post:", err);
+      alert("Gagal menyimpan postingan baru ke server.");
+    }
+  };
 
   // SVG Chart States
   const publishedTasks = pipelineTasks.filter(t => t.status === 'published');
@@ -611,15 +673,25 @@ const Analytics = ({ pipelineTasks = [], setPipelineTasks, profile = {}, setProf
               <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Belum disinkronkan</span>
             )}
           </div>
-          <button 
-            className="btn btn-secondary" 
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', fontSize: '12.5px', border: '1px solid var(--border-color)' }}
-            onClick={handleSyncPosts}
-            disabled={syncingPosts}
-          >
-            <RefreshCw size={13} className={syncingPosts ? 'spin-animation' : ''} />
-            {syncingPosts ? 'Menyinkronkan...' : 'Perbarui Feed'}
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button 
+              className="btn btn-secondary" 
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', fontSize: '12.5px', border: '1px solid var(--border-color)' }}
+              onClick={() => setShowAddPostModal(true)}
+            >
+              <Plus size={13} style={{ color: 'var(--accent-color)' }} />
+              Tambah Konten Manual
+            </button>
+            <button 
+              className="btn btn-secondary" 
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', fontSize: '12.5px', border: '1px solid var(--border-color)' }}
+              onClick={handleSyncPosts}
+              disabled={syncingPosts}
+            >
+              <RefreshCw size={13} className={syncingPosts ? 'spin-animation' : ''} />
+              {syncingPosts ? 'Menyinkronkan...' : 'Perbarui Feed'}
+            </button>
+          </div>
         </div>
 
         {syncError && (
@@ -754,33 +826,177 @@ const Analytics = ({ pipelineTasks = [], setPipelineTasks, profile = {}, setProf
                       </div>
                     </div>
 
-                    {/* Actions */}
-                    <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
-                      <a 
-                        href={post.url} 
-                        target="_blank" 
-                        rel="noreferrer" 
-                        className="btn btn-secondary" 
-                        style={{ padding: '6px 12px', fontSize: '12px', flexGrow: 1, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', border: '1px solid var(--border-color)' }}
-                      >
-                        Buka Postingan &rarr;
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-
-          {(!profile.recentPosts || profile.recentPosts.length === 0) && (
-            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
-              Belum ada postingan disinkronkan. Tekan tombol "Perbarui Feed" untuk mengambil 10 konten terbaru Anda dari masing-masing platform.
-            </div>
-          )}
-        </div>
-      </div>
-
-    </div>
-  );
-};
-
-export default Analytics;
+                     {/* Actions */}
+                     <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+                       <a 
+                         href={post.url} 
+                         target="_blank" 
+                         rel="noreferrer" 
+                         className="btn btn-secondary" 
+                         style={{ padding: '6px 12px', fontSize: '12px', flexGrow: 1, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', border: '1px solid var(--border-color)' }}
+                       >
+                         Buka Postingan &rarr;
+                       </a>
+                       <button
+                         onClick={() => handleDeletePost(post.id)}
+                         className="btn btn-secondary"
+                         style={{ padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-color)', color: 'var(--danger-color)', cursor: 'pointer' }}
+                         title="Hapus Postingan"
+                       >
+                         <Trash2 size={13} />
+                       </button>
+                     </div>
+                   </div>
+                 </div>
+               );
+             })}
+ 
+           {(!profile.recentPosts || profile.recentPosts.length === 0) && (
+             <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+               Belum ada postingan disinkronkan. Tekan tombol "Perbarui Feed" atau "Tambah Konten Manual" untuk menyelaraskan konten terbaru Anda.
+             </div>
+           )}
+         </div>
+       </div>
+ 
+       {/* Manual Post Modal */}
+       {showAddPostModal && (
+         <div style={{
+           position: 'fixed',
+           top: 0, left: 0, right: 0, bottom: 0,
+           backgroundColor: 'rgba(0,0,0,0.75)',
+           display: 'flex', justifyContent: 'center', alignItems: 'center',
+           zIndex: 2000, padding: '20px'
+         }}>
+           <div className="card" style={{ width: '100%', maxWidth: '500px', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)', padding: '24px' }}>
+             <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-primary)', marginTop: 0 }}>
+               <Plus size={18} style={{ color: 'var(--accent-color)' }} /> Tambah Konten Manual
+             </h2>
+             <form onSubmit={handleAddPostSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+               <div className="form-group">
+                 <label style={{ fontSize: '12.5px', marginBottom: '6px', display: 'block', fontWeight: '500' }}>Platform *</label>
+                 <select 
+                   className="form-control"
+                   value={newPost.platform}
+                   onChange={e => setNewPost({ ...newPost, platform: e.target.value })}
+                   style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                 >
+                   <option value="TikTok">TikTok</option>
+                   <option value="Instagram">Instagram</option>
+                   <option value="YouTube">YouTube</option>
+                 </select>
+               </div>
+ 
+               <div className="form-group">
+                 <label style={{ fontSize: '12.5px', marginBottom: '6px', display: 'block', fontWeight: '500' }}>Judul Konten *</label>
+                 <input 
+                   type="text"
+                   required
+                   placeholder="Masukkan judul konten terbaru..."
+                   className="form-control"
+                   value={newPost.title}
+                   onChange={e => setNewPost({ ...newPost, title: e.target.value })}
+                   style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                 />
+               </div>
+ 
+               <div className="form-group">
+                 <label style={{ fontSize: '12.5px', marginBottom: '6px', display: 'block', fontWeight: '500' }}>Tautan/URL Video</label>
+                 <input 
+                   type="url"
+                   placeholder="https://www.tiktok.com/@user/video/..."
+                   className="form-control"
+                   value={newPost.url}
+                   onChange={e => setNewPost({ ...newPost, url: e.target.value })}
+                   style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                 />
+               </div>
+ 
+               <div className="form-group">
+                 <label style={{ fontSize: '12.5px', marginBottom: '6px', display: 'block', fontWeight: '500' }}>URL Gambar Thumbnail (Opsional)</label>
+                 <input 
+                   type="text"
+                   placeholder="https://..."
+                   className="form-control"
+                   value={newPost.thumbnail}
+                   onChange={e => setNewPost({ ...newPost, thumbnail: e.target.value })}
+                   style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                 />
+               </div>
+ 
+               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                 <div className="form-group">
+                   <label style={{ fontSize: '12.5px', marginBottom: '6px', display: 'block', fontWeight: '500' }}>Tanggal Upload</label>
+                   <input 
+                     type="date"
+                     className="form-control"
+                     value={newPost.uploadDate}
+                     onChange={e => setNewPost({ ...newPost, uploadDate: e.target.value })}
+                     style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                   />
+                 </div>
+                 <div className="form-group">
+                   <label style={{ fontSize: '12.5px', marginBottom: '6px', display: 'block', fontWeight: '500' }}>Views/Tayangan</label>
+                   <input 
+                     type="number"
+                     min="0"
+                     className="form-control"
+                     value={newPost.views}
+                     onChange={e => setNewPost({ ...newPost, views: e.target.value })}
+                     style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                   />
+                 </div>
+               </div>
+ 
+               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                 <div className="form-group">
+                   <label style={{ fontSize: '12.5px', marginBottom: '6px', display: 'block', fontWeight: '500' }}>Likes/Suka</label>
+                   <input 
+                     type="number"
+                     min="0"
+                     className="form-control"
+                     value={newPost.likes}
+                     onChange={e => setNewPost({ ...newPost, likes: e.target.value })}
+                     style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                   />
+                 </div>
+                 <div className="form-group">
+                   <label style={{ fontSize: '12.5px', marginBottom: '6px', display: 'block', fontWeight: '500' }}>Komentar</label>
+                   <input 
+                     type="number"
+                     min="0"
+                     className="form-control"
+                     value={newPost.comments}
+                     onChange={e => setNewPost({ ...newPost, comments: e.target.value })}
+                     style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                   />
+                 </div>
+               </div>
+ 
+               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '14px' }}>
+                 <button 
+                   type="button" 
+                   className="btn btn-secondary" 
+                   onClick={() => setShowAddPostModal(false)}
+                   style={{ padding: '8px 16px', fontSize: '13px', border: '1px solid var(--border-color)', cursor: 'pointer' }}
+                 >
+                   Batal
+                 </button>
+                 <button 
+                   type="submit" 
+                   className="btn btn-primary" 
+                   style={{ padding: '8px 16px', fontSize: '13px', backgroundColor: 'var(--accent-color)', border: 'none', color: 'white', cursor: 'pointer' }}
+                 >
+                   Simpan Konten
+                 </button>
+               </div>
+             </form>
+           </div>
+         </div>
+       )}
+ 
+     </div>
+   );
+ };
+ 
+ export default Analytics;
