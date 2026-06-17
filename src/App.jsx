@@ -473,7 +473,7 @@ function App() {
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} profile={profile} />
 
       {/* Main Content Area */}
-      <main className={`main-content page-fade-in ${['pipeline', 'calendar', 'conversation', 'analytics', 'toolkit'].includes(activeTab) ? 'wide-layout' : ''}`} key={activeTab}>
+      <main className={`main-content animate-fade-in-up ${['pipeline', 'calendar', 'conversation', 'analytics', 'toolkit'].includes(activeTab) ? 'wide-layout' : ''}`} key={activeTab}>
         {renderPage()}
       </main>
 

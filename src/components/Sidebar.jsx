@@ -49,12 +49,14 @@ const Sidebar = ({ activeTab, setActiveTab, profile }) => {
       </ul>
       
       <div className="sidebar-footer">
-        <div className="user-avatar">
-          {profile?.name ? profile.name.trim().charAt(0).toUpperCase() : 'C'}
-        </div>
-        <div className="user-info">
-          <span className="user-name">{profile?.name || 'Creator'}</span>
-          <span className="user-role">{profile?.handle || '@handle'}</span>
+        <div className="sidebar-user">
+          <div className="sidebar-avatar" style={{ backgroundColor: 'var(--accent-color)', color: '#fff', alignItems: 'center', justifyContent: 'center' }}>
+            {profile?.name ? profile.name.trim().charAt(0).toUpperCase() : 'C'}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span className="user-name">{profile?.name || 'Creator'}</span>
+            <span className="user-role">{profile?.handle || '@handle'}</span>
+          </div>
         </div>
       </div>
     </aside>
