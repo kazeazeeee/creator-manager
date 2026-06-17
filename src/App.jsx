@@ -53,59 +53,59 @@ function App() {
   const [pipelineTasks, setPipelineTasks] = useState([]);
   const [calendarEvents, setCalendarEvents] = useState([]);
 
+  const loadBackendData = async () => {
+    try {
+      const [profileData, tasksData, invoicesData, calendarData, settingsData] = await Promise.all([
+        apiGetProfile(),
+        apiGetTasks(),
+        apiGetInvoices(),
+        apiGetCalendar(),
+        apiGetSettings()
+      ]);
+
+      setProfile(profileData);
+      setPipelineTasks(tasksData);
+      setInvoices(invoicesData);
+      setCalendarEvents(calendarData);
+      
+      if (settingsData) {
+        setSumopodApiKey(settingsData.sumopodApiKey || '');
+        setModelBiasa(settingsData.modelBiasa || 'deepseek-v4-flash');
+        setModelOptimal(settingsData.modelOptimal || 'deepseek-v4-pro');
+        setGoogleClientId(settingsData.googleClientId || '');
+        setGoogleToken(settingsData.googleToken || '');
+        setGoogleConnected(settingsData.googleConnected || false);
+        if (settingsData.fontPreference) {
+          setFontPreference(settingsData.fontPreference);
+        }
+      }
+
+      // Lazy Sync: Trigger auto-refresh in background if never synced or synced > 4 hours ago
+      const lastSynced = profileData.postsLastSynced;
+      const now = new Date();
+      const shouldSync = !lastSynced || (now - new Date(lastSynced)) > (4 * 60 * 60 * 1000);
+      if (shouldSync && (profileData.tiktok || profileData.youtube || profileData.instagram)) {
+        console.log('Lazy Sync: Auto-refreshing feed in background...');
+        apiSyncRecentPosts().then(res => {
+          if (res && res.success) {
+            setProfile(prev => ({
+              ...prev,
+              recentPosts: res.recentPosts,
+              postsLastSynced: res.postsLastSynced
+            }));
+            console.log('Lazy Sync feed completed.');
+          }
+        }).catch(err => {
+          console.error('Lazy Sync background failed:', err.message);
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load data from backend server:', err);
+    }
+  };
+
   // 1. Fetch data on mount
   useEffect(() => {
-    const loadBackendData = async () => {
-      try {
-        const [profileData, tasksData, invoicesData, calendarData, settingsData] = await Promise.all([
-          apiGetProfile(),
-          apiGetTasks(),
-          apiGetInvoices(),
-          apiGetCalendar(),
-          apiGetSettings()
-        ]);
-
-        setProfile(profileData);
-        setPipelineTasks(tasksData);
-        setInvoices(invoicesData);
-        setCalendarEvents(calendarData);
-        
-        if (settingsData) {
-          setSumopodApiKey(settingsData.sumopodApiKey || '');
-          setModelBiasa(settingsData.modelBiasa || 'deepseek-v4-flash');
-          setModelOptimal(settingsData.modelOptimal || 'deepseek-v4-pro');
-          setGoogleClientId(settingsData.googleClientId || '');
-          setGoogleToken(settingsData.googleToken || '');
-          setGoogleConnected(settingsData.googleConnected || false);
-          if (settingsData.fontPreference) {
-            setFontPreference(settingsData.fontPreference);
-          }
-        }
-
-        // Lazy Sync: Trigger auto-refresh in background if never synced or synced > 4 hours ago
-        const lastSynced = profileData.postsLastSynced;
-        const now = new Date();
-        const shouldSync = !lastSynced || (now - new Date(lastSynced)) > (4 * 60 * 60 * 1000);
-        if (shouldSync && (profileData.tiktok || profileData.youtube || profileData.instagram)) {
-          console.log('Lazy Sync: Auto-refreshing feed in background...');
-          apiSyncRecentPosts().then(res => {
-            if (res && res.success) {
-              setProfile(prev => ({
-                ...prev,
-                recentPosts: res.recentPosts,
-                postsLastSynced: res.postsLastSynced
-              }));
-              console.log('Lazy Sync feed completed.');
-            }
-          }).catch(err => {
-            console.error('Lazy Sync background failed:', err.message);
-          });
-        }
-      } catch (err) {
-        console.error('Failed to load data from backend server:', err);
-      }
-    };
-
     loadBackendData();
   }, []);
 
@@ -377,6 +377,7 @@ function App() {
             apiKey={sumopodApiKey} 
             creatorProfile={profile} 
             addPipelineTask={handleAddPipelineTask}
+            refreshAllData={loadBackendData}
           />
         );
       case 'toolkit':

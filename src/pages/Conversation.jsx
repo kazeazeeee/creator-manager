@@ -35,7 +35,7 @@ const SUGGESTIONS = [
   "Tulis skrip video Reels berdurasi 30 detik"
 ];
 
-const Conversation = ({ apiKey, creatorProfile, addPipelineTask }) => {
+const Conversation = ({ apiKey, creatorProfile, addPipelineTask, refreshAllData }) => {
   const [sessions, setSessions] = useState([]);
   const [activeSessionId, setActiveSessionId] = useState(null);
   const [inputText, setInputText] = useState('');
@@ -515,6 +515,9 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask }) => {
         }));
       } else {
         const res = await apiChatWithManager(historyForApi, detectedAgentRole);
+        if (res.actionExecuted && refreshAllData) {
+          refreshAllData();
+        }
         const finalMessages = [...updatedMessagesForState, { sender: 'assistant', text: res.reply }];
         saveSessions(sessions.map(s => {
           if (s.id === activeSessionId) {

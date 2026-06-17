@@ -888,6 +888,19 @@ Aturan Penulisan & Format Balasan Anda:
 2. **Gaya Adaptif:** Formal untuk bisnis, kasual untuk obrolan santai/bercanda.
 3. **Gunakan Data Riil:** Jika kreator tanya soal data mereka (postingan, views, invoice, jadwal, pipeline), SELALU jawab dari data di atas. JANGAN pernah bilang "tidak punya akses".
 4. **Keterbacaan:** Bold pada kata penting. List hanya jika perlu.
+5. **Aksi Nyata / Tool Calling (PENTING):** Anda memiliki kemampuan untuk melakukan aksi nyata langsung pada database aplikasi jika Kreator meminta Anda untuk menambah, menghapus, atau mengubah data (seperti tugas, jadwal/kalender, invoice, atau rate card).
+   Jika Anda mendeteksi bahwa Kreator meminta Anda melakukan tindakan tersebut, Anda wajib menyisipkan tag instruksi eksekusi di bagian paling akhir balasan Anda (setelah pesan teks Anda) menggunakan format JSON berikut:
+   [EXECUTE_ACTION: { "action": "create_task" | "create_invoice" | "create_calendar_event" | "update_rates", "data": { ... } }]
+
+   Struktur parameter data untuk masing-masing aksi:
+   - create_task: { "title": string (wajib), "brand": string (wajib), "platform": "TikTok"|"Instagram"|"YouTube"|"Lainnya" (wajib), "dueDate": "YYYY-MM-DD" (wajib) }
+   - create_invoice: { "clientName": string (wajib), "projectName": string (wajib), "amount": number (wajib), "dueDate": "YYYY-MM-DD" (wajib) }
+   - create_calendar_event: { "title": string (wajib), "date": "YYYY-MM-DD" (wajib), "type": "personal"|"brand"|"deadline" (wajib), "brand": string }
+   - update_rates: { "rates": number (wajib) }
+
+   Contoh: Jika Kreator meminta "Tolong buatkan invoice Tokopedia Rp 5.000.000 jatuh tempo tanggal 19 Juni 2026", balasan Anda:
+   "Tentu, saya sudah membuatkan invoice untuk Tokopedia sebesar Rp 5.000.000 dengan jatuh tempo 19 Juni 2026. Anda bisa mengeceknya langsung di tab Invoice."
+   [EXECUTE_ACTION: { "action": "create_invoice", "data": { "clientName": "Tokopedia", "projectName": "Kerja Sama Kampanye", "amount": 5000000, "dueDate": "2026-06-19" } }]
 
 Riwayat Percakapan:
 ${messagesFormatted}
@@ -897,7 +910,76 @@ Tanggapan Baru Anda (singkat & tepat sasaran):
 
   try {
     const aiResponse = await callSumopod(prompt, apiKey, selectedModel, false);
-    res.json({ reply: aiResponse });
+    let replyText = aiResponse || '';
+    let actionExecuted = null;
+
+    // Detect if model outputted EXECUTE_ACTION
+    const actionRegex = /\[EXECUTE_ACTION:\s*(\{[\s\S]*?\})\s*\]/;
+    const match = replyText.match(actionRegex);
+    if (match) {
+      try {
+        const actionObj = JSON.parse(match[1]);
+        const dbCurrent = readDb();
+        
+        if (actionObj.action === 'create_task') {
+          const newTask = {
+            id: `task-${Date.now()}`,
+            title: actionObj.data.title,
+            brand: actionObj.data.brand,
+            platform: actionObj.data.platform || 'Lainnya',
+            status: 'idea', // Default to Idea status on kanban
+            dueDate: actionObj.data.dueDate || new Date().toISOString().split('T')[0],
+            deliverables: 'Dibuat otomatis oleh Asisten AI',
+            notes: 'Dibuat otomatis via percakapan Manajer Digital.'
+          };
+          dbCurrent.tasks = dbCurrent.tasks || [];
+          dbCurrent.tasks.push(newTask);
+          actionExecuted = { type: 'task', data: newTask };
+        } 
+        else if (actionObj.action === 'create_invoice') {
+          const newInvoice = {
+            id: `INV-${new Date().getFullYear()}-${String(Math.floor(1000 + Math.random() * 9000))}`,
+            clientName: actionObj.data.clientName,
+            clientEmail: '',
+            projectName: actionObj.data.projectName || 'Kerja Sama Kampanye',
+            issueDate: new Date().toISOString().split('T')[0],
+            dueDate: actionObj.data.dueDate || new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
+            items: [{ description: actionObj.data.projectName || 'Kerja Sama Kampanye', qty: 1, rate: actionObj.data.amount }],
+            amount: actionObj.data.amount,
+            status: 'pending'
+          };
+          dbCurrent.invoices = dbCurrent.invoices || [];
+          dbCurrent.invoices.push(newInvoice);
+          actionExecuted = { type: 'invoice', data: newInvoice };
+        } 
+        else if (actionObj.action === 'create_calendar_event') {
+          const newEvent = {
+            id: `event-${Date.now()}`,
+            title: actionObj.data.title,
+            start: actionObj.data.date || new Date().toISOString().split('T')[0],
+            type: actionObj.data.type || 'personal',
+            brand: actionObj.data.brand || ''
+          };
+          dbCurrent.calendar = dbCurrent.calendar || [];
+          dbCurrent.calendar.push(newEvent);
+          actionExecuted = { type: 'calendar', data: newEvent };
+        } 
+        else if (actionObj.action === 'update_rates') {
+          dbCurrent.profile = dbCurrent.profile || {};
+          dbCurrent.profile.rates = actionObj.data.rates;
+          actionExecuted = { type: 'profile', data: dbCurrent.profile };
+        }
+
+        writeDb(dbCurrent);
+        
+        // Clean the EXECUTE_ACTION block from the text response
+        replyText = replyText.replace(actionRegex, '').trim();
+      } catch (errParse) {
+        console.error("Failed executing AI action:", errParse.message);
+      }
+    }
+
+    res.json({ reply: replyText, actionExecuted });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
