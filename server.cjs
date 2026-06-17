@@ -1701,6 +1701,90 @@ Aturan Email:
   }
 });
 
+const fallbackAnalyzeClause = (clauseText) => {
+  const lower = (clauseText || '').toLowerCase();
+  
+  let explanation = 'Klausul ini menjabarkan hak dan kewajiban umum dalam kerja sama sponsorship.';
+  let riskLevel = 'Low';
+  let riskReason = 'Ketentuan ini tergolong standar dan tidak memiliki dampak merugikan yang signifikan bagi kelangsungan bisnis Anda.';
+  let counterProposal = 'Ketentuan ini sudah cukup baik, tidak diperlukan revisi khusus.';
+  
+  if (lower.includes('exclusivity') || lower.includes('eksklusif') || lower.includes('promosi brand lain')) {
+    explanation = 'Klausul ini mewajibkan Anda untuk tidak mempromosikan atau bekerja sama dengan brand pesaing (atau kategori produk sejenis) selama jangka waktu tertentu.';
+    riskLevel = 'Medium';
+    riskReason = 'Periode eksklusivitas yang terlalu panjang atau lingkup kategori produk yang terlalu luas (misal mencakup minuman kopi dan teh untuk produk minuman energi) dapat membatasi peluang pendapatan Anda dari brand lain.';
+    counterProposal = 'Kreator mengusulkan agar klausul eksklusivitas dibatasi hanya selama 30 hari setelah publikasi konten tayang dan khusus terbatas pada brand kompetitor langsung (kategori minuman energi serupa).';
+  } else if (lower.includes('assign') || lower.includes('intellectual property') || lower.includes('copyright') || lower.includes('hak cipta') || lower.includes('perpetuity') || lower.includes('selamanya')) {
+    explanation = 'Klausul ini menyatakan pengalihan hak kepemilikan cipta atas konten buatan Anda secara permanen dan selamanya kepada pihak brand, termasuk hak untuk mengedit dan menggunakannya untuk iklan.';
+    riskLevel = 'High';
+    riskReason = 'Kehilangan hak cipta secara permanen berarti brand memiliki penuh karya Anda selamanya, tanpa ada kewajiban membayar biaya lisensi tambahan (usage fee) untuk penggunaan di masa depan.';
+    counterProposal = 'Kreator tetap memegang penuh hak cipta atas konten. Kreator memberikan lisensi penggunaan konten kepada Sponsor khusus untuk tujuan promosi organik dan iklan berbayar (paid ads) selama 3 (tiga) bulan terhitung sejak tanggal publikasi.';
+  } else if (lower.includes('penalty') || lower.includes('denda') || lower.includes('delay') || lower.includes('terlambat')) {
+    explanation = 'Klausul ini mengatur denda keuangan atau sanksi potongan pembayaran jika Anda terlambat menyerahkan draf konten atau mengunggah konten melewati tanggal tenggat.';
+    riskLevel = 'High';
+    riskReason = 'Denda sebesar 1% atau lebih per hari keterlambatan sangat memberatkan dan tidak adil, terutama jika keterlambatan terjadi karena faktor persetujuan draf yang lambat dari sisi brand.';
+    counterProposal = 'Denda keterlambatan hanya diberlakukan setelah masa tenggang (grace period) selama 3 (tiga) hari kerja dari tanggal deadline terlampaui, dan denda dibatasi maksimal 0.1% per hari keterlambatan.';
+  } else if (lower.includes('payment') || lower.includes('bayar') || lower.includes('90 days') || lower.includes('60 days') || lower.includes('invoice')) {
+    explanation = 'Klausul ini mengatur jangka waktu (termin) pembayaran jasa yang akan ditransfer oleh pihak brand setelah invoice dikirimkan.';
+    riskLevel = lower.includes('90') || lower.includes('60') ? 'High' : 'Medium';
+    riskReason = lower.includes('90') || lower.includes('60') 
+      ? 'Jangka waktu pembayaran NET 60 atau NET 90 hari terlalu lama bagi arus kas kreator independen.' 
+      : 'Jangka waktu pembayaran standar industri adalah NET 30 hari.';
+    counterProposal = 'Pembayaran disepakati akan diselesaikan oleh Sponsor dalam jangka waktu maksimal 30 (tiga puluh) hari kalender setelah invoice resmi diterima dari Kreator.';
+  }
+
+  return { explanation, riskLevel, riskReason, counterProposal };
+};
+
+// 16. AI Specific Clause Analyzer
+app.post('/api/ai/analyze-clause', async (req, res) => {
+  const db = readDb();
+  const apiKey = getApiKey(db);
+  const models = getModels(db);
+  const { clauseText } = req.body;
+
+  if (!apiKey) {
+    const result = fallbackAnalyzeClause(clauseText);
+    return res.json(result);
+  }
+
+  const prompt = `
+Anda adalah ahli hukum kontrak dan manajer bisnis konten kreator yang berpihak pada kesejahteraan dan perlindungan hukum kreator.
+Tugas Anda adalah menganalisis klausul/pasal kontrak berikut secara mendalam dan adil:
+"""
+${clauseText}
+"""
+
+Tolong bedah klausul ini dan kembalikan analisis Anda dalam format JSON valid dengan struktur berikut:
+{
+  "explanation": "Penjelasan arti klausul ini dalam bahasa kasual Indonesia yang santai dan sangat mudah dipahami oleh orang awam.",
+  "riskLevel": "Low / Medium / High (Tingkat risiko klausul bagi kreator)",
+  "riskReason": "Alasan mengapa klausul ini berisiko bagi kreator (apa kerugian yang bisa dialami kreator jika menyetujuinya).",
+  "counterProposal": "Kalimat draf negosiasi tandingan dalam Bahasa Indonesia hukum yang formal dan berimbang untuk diajukan kreator kepada pihak brand sebagai revisi klausul tersebut."
+}
+`;
+
+  try {
+    const aiResponse = await callSumopod(prompt, apiKey, models.optimal || models.biasa, true);
+    let cleaned = aiResponse.trim();
+    if (cleaned.startsWith('```json')) {
+      cleaned = cleaned.substring(7);
+    } else if (cleaned.startsWith('```')) {
+      cleaned = cleaned.substring(3);
+    }
+    if (cleaned.endsWith('```')) {
+      cleaned = cleaned.substring(0, cleaned.length - 3);
+    }
+    cleaned = cleaned.trim();
+    
+    res.json(JSON.parse(cleaned));
+  } catch (err) {
+    console.warn("Failed calling Sumopod for clause analysis, falling back to local:", err.message);
+    const result = fallbackAnalyzeClause(clauseText);
+    res.json(result);
+  }
+});
+
 // Serve static assets in production (Vite build output)
 const distPath = path.join(__dirname, 'dist');
 if (fs.existsSync(distPath)) {

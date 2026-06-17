@@ -213,4 +213,10 @@ export const apiGeneratePitch = (brandName, objective, serviceName, serviceRate,
   body: JSON.stringify({ brandName, objective, serviceName, serviceRate, tone, creatorProfile, displayFollowers })
 });
 
+export const apiAnalyzeClause = (clauseText) => request('/ai/analyze-clause', {
+  method: 'POST',
+  body: JSON.stringify({ clauseText })
+});
+
+
 

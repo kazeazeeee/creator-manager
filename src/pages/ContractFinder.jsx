@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { AlertTriangle, ShieldAlert, FileText, CheckCircle, RefreshCw, Copy, Check } from 'lucide-react';
-import { apiAnalyzeContract } from '../utils/api';
+import { AlertTriangle, ShieldAlert, FileText, CheckCircle, RefreshCw, Copy, Check, Sparkles } from 'lucide-react';
+import { apiAnalyzeContract, apiAnalyzeClause } from '../utils/api';
 
 const MOCK_CONTRACT_INPUT = `Sponsorship Agreement - Brand Z and Creator Jess
 This Sponsorship Agreement ("Agreement") is made between Brand Z ("Sponsor") and Jessica Hartono ("Creator").
@@ -44,6 +44,13 @@ const ContractFinder = ({ apiKey }) => {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
 
+  // States for Clause Clarifier
+  const [clauseText, setClauseText] = useState('');
+  const [clauseResult, setClauseResult] = useState(null);
+  const [clauseLoading, setClauseLoading] = useState(false);
+  const [copiedClauseProposal, setCopiedClauseProposal] = useState(false);
+  const [clauseError, setClauseError] = useState('');
+
   const handleAnalyze = async (useDemo = false) => {
     setError('');
     
@@ -85,13 +92,100 @@ const ContractFinder = ({ apiKey }) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleAnalyzeClause = async () => {
+    setClauseError('');
+    if (!clauseText.trim()) {
+      setClauseError('Harap masukkan klausul kontrak terlebih dahulu.');
+      return;
+    }
+
+    setClauseLoading(true);
+    try {
+      const res = await apiAnalyzeClause(clauseText);
+      setClauseResult(res);
+    } catch (err) {
+      console.error(err);
+      setClauseError(`Gagal menganalisis klausul: ${err.message}`);
+    } finally {
+      setClauseLoading(false);
+    }
+  };
+
+  const handleCopyClauseProposal = () => {
+    if (!clauseResult) return;
+    navigator.clipboard.writeText(clauseResult.counterProposal);
+    setCopiedClauseProposal(true);
+    setTimeout(() => setCopiedClauseProposal(false), 2000);
+  };
+
   const getRiskColor = (risk) => {
     switch (risk?.toLowerCase()) {
       case 'high': return 'var(--danger-color)';
       case 'medium': return 'var(--warning-color)';
+      case 'low': return 'var(--success-color)';
       default: return 'var(--success-color)';
     }
   };
+
+  const getExclusivityPillar = (res) => {
+    if (!res.hasExclusivity) {
+      return { status: 'safe', label: 'Bebas Eksklusivitas', desc: 'Aman: Tidak ada batasan kerja sama dengan brand lain.', color: 'var(--success-color)' };
+    }
+    const details = (res.exclusivityDetails || '').toLowerCase();
+    if (details.includes('12 bulan') || details.includes('1 tahun') || details.includes('luas') || details.includes('semua brand')) {
+      return { status: 'danger', label: 'Eksklusivitas Luas', desc: 'Bahaya: Batasan terlalu lama atau cakupan terlalu luas.', color: 'var(--danger-color)' };
+    }
+    return { status: 'warning', label: 'Eksklusivitas Terbatas', desc: 'Waspada: Batasan kerja sama dengan kompetitor sejenis.', color: 'var(--warning-color)' };
+  };
+
+  const getPaymentPillar = (res) => {
+    const risk = (res.paymentRisk || '').toLowerCase();
+    if (risk === 'high') {
+      return { status: 'danger', label: 'Termin Sangat Lambat', desc: 'Bahaya: Pembayaran di atas 60-90 hari (NET 60+).', color: 'var(--danger-color)' };
+    }
+    if (risk === 'medium') {
+      return { status: 'warning', label: 'Termin Sedang', desc: 'Waspada: Pembayaran antara 30-60 hari (NET 45/60).', color: 'var(--warning-color)' };
+    }
+    return { status: 'safe', label: 'Termin Adil', desc: 'Aman: Pembayaran NET 30 hari atau kurang.', color: 'var(--success-color)' };
+  };
+
+  const getIpPillar = (res) => {
+    const risk = (res.usageRightsRisk || '').toLowerCase();
+    if (risk === 'high') {
+      return { status: 'danger', label: 'Pengalihan Hak Cipta', desc: 'Bahaya: Hak cipta dialihkan permanen & tanpa batas.', color: 'var(--danger-color)' };
+    }
+    if (risk === 'medium') {
+      return { status: 'warning', label: 'Lisensi Tanpa Batas', desc: 'Waspada: Lisensi penggunaan iklan tanpa batas waktu.', color: 'var(--warning-color)' };
+    }
+    return { status: 'safe', label: 'Lisensi Terbatas', desc: 'Aman: Hak cipta tetap milik Anda, lisensi terbatas.', color: 'var(--success-color)' };
+  };
+
+  const getPenaltyPillar = (res) => {
+    const hasHeavyPenalty = res.otherRisks?.some(r => {
+      const title = (r.title || '').toLowerCase();
+      const desc = (r.description || '').toLowerCase();
+      return (title.includes('denda') || title.includes('keterlambatan') || title.includes('penalty')) && 
+             (desc.includes('1%') || desc.includes('berat') || desc.includes('tinggi'));
+    });
+    const hasAnyPenalty = res.otherRisks?.some(r => {
+      const title = (r.title || '').toLowerCase();
+      const desc = (r.description || '').toLowerCase();
+      return title.includes('denda') || title.includes('keterlambatan') || title.includes('penalty') || desc.includes('denda');
+    });
+
+    if (hasHeavyPenalty) {
+      return { status: 'danger', label: 'Denda Keterlambatan Berat', desc: 'Bahaya: Denda harian sangat tinggi (>1% per hari).', color: 'var(--danger-color)' };
+    }
+    if (hasAnyPenalty) {
+      return { status: 'warning', label: 'Ada Denda Keterlambatan', desc: 'Waspada: Denda harian berlaku tanpa masa tenggang.', color: 'var(--warning-color)' };
+    }
+    return { status: 'safe', label: 'Bebas Denda Berat', desc: 'Aman: Tanpa denda harian atau ada masa tenggang wajar.', color: 'var(--success-color)' };
+  };
+
+  const exclPillar = result ? getExclusivityPillar(result) : null;
+  const payPillar = result ? getPaymentPillar(result) : null;
+  const ipPillar = result ? getIpPillar(result) : null;
+  const penPillar = result ? getPenaltyPillar(result) : null;
 
   return (
     <div>
@@ -156,6 +250,105 @@ const ContractFinder = ({ apiKey }) => {
               <ShieldAlert size={18} style={{ color: 'var(--danger-color)' }} /> Potensi Risiko Terdeteksi
             </h3>
 
+            {/* Checklist Guard (4 Pillars) Overview */}
+            <div style={{
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius-lg)',
+              padding: '20px',
+              marginBottom: '24px'
+            }}>
+              <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
+                🛡️ Checklist Audit Kontrak (4 Pilar Utama)
+              </h4>
+              
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '16px'
+              }}>
+                {/* Pilar 1: Eksklusivitas */}
+                <div style={{
+                  padding: '16px',
+                  borderRadius: 'var(--border-radius-md)',
+                  border: `1px solid ${exclPillar.color}33`,
+                  backgroundColor: `${exclPillar.color}05`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {exclPillar.status === 'safe' && <CheckCircle size={18} style={{ color: exclPillar.color }} />}
+                    {exclPillar.status === 'warning' && <AlertTriangle size={18} style={{ color: exclPillar.color }} />}
+                    {exclPillar.status === 'danger' && <ShieldAlert size={18} style={{ color: exclPillar.color }} />}
+                    <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>Eksklusivitas</span>
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: exclPillar.color }}>{exclPillar.label}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{exclPillar.desc}</div>
+                </div>
+
+                {/* Pilar 2: Termin Pembayaran */}
+                <div style={{
+                  padding: '16px',
+                  borderRadius: 'var(--border-radius-md)',
+                  border: `1px solid ${payPillar.color}33`,
+                  backgroundColor: `${payPillar.color}05`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {payPillar.status === 'safe' && <CheckCircle size={18} style={{ color: payPillar.color }} />}
+                    {payPillar.status === 'warning' && <AlertTriangle size={18} style={{ color: payPillar.color }} />}
+                    {payPillar.status === 'danger' && <ShieldAlert size={18} style={{ color: payPillar.color }} />}
+                    <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>Pembayaran</span>
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: payPillar.color }}>{payPillar.label}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{payPillar.desc}</div>
+                </div>
+
+                {/* Pilar 3: Hak Cipta */}
+                <div style={{
+                  padding: '16px',
+                  borderRadius: 'var(--border-radius-md)',
+                  border: `1px solid ${ipPillar.color}33`,
+                  backgroundColor: `${ipPillar.color}05`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {ipPillar.status === 'safe' && <CheckCircle size={18} style={{ color: ipPillar.color }} />}
+                    {ipPillar.status === 'warning' && <AlertTriangle size={18} style={{ color: ipPillar.color }} />}
+                    {ipPillar.status === 'danger' && <ShieldAlert size={18} style={{ color: ipPillar.color }} />}
+                    <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>Hak Cipta (IP)</span>
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: ipPillar.color }}>{ipPillar.label}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{ipPillar.desc}</div>
+                </div>
+
+                {/* Pilar 4: Denda */}
+                <div style={{
+                  padding: '16px',
+                  borderRadius: 'var(--border-radius-md)',
+                  border: `1px solid ${penPillar.color}33`,
+                  backgroundColor: `${penPillar.color}05`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {penPillar.status === 'safe' && <CheckCircle size={18} style={{ color: penPillar.color }} />}
+                    {penPillar.status === 'warning' && <AlertTriangle size={18} style={{ color: penPillar.color }} />}
+                    {penPillar.status === 'danger' && <ShieldAlert size={18} style={{ color: penPillar.color }} />}
+                    <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>Denda & Sanksi</span>
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: penPillar.color }}>{penPillar.label}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{penPillar.desc}</div>
+                </div>
+              </div>
+            </div>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               
               {/* Exclusivity Section */}
@@ -198,7 +391,7 @@ const ContractFinder = ({ apiKey }) => {
               </div>
 
               {/* Other Risks */}
-              {result.otherRisks.length > 0 && (
+              {result.otherRisks && result.otherRisks.length > 0 && (
                 <div>
                   <h4 style={{ fontSize: '13px', fontWeight: '600', color: 'var(--danger-color)', marginBottom: '8px' }}>⚠️ Risiko Tambahan Lainnya:</h4>
                   <ul style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -230,6 +423,104 @@ const ContractFinder = ({ apiKey }) => {
             </div>
           </div>
         )}
+
+        {/* AI Clause Clarifier Card */}
+        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
+          <h3 style={{ fontSize: '16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Sparkles size={18} className="text-accent" style={{ color: 'var(--accent-color)' }} /> AI Clause Clarifier (Pembedah Klausul Spesifik)
+          </h3>
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+            Tempelkan satu paragraf atau pasal kontrak yang membingungkan atau mencurigakan di bawah ini. AI kami akan membedah risiko hukumnya secara mendalam dan memberikan rekomendasi revisi tandingan yang adil.
+          </p>
+
+          <textarea 
+            className="form-control" 
+            style={{ minHeight: '100px', fontSize: '13px', lineHeight: '1.5', fontFamily: 'monospace', marginBottom: '12px' }}
+            placeholder="Contoh: 'Pihak Kedua dilarang mempromosikan produk dari brand lain sejenis maupun tidak sejenis selama 6 bulan...'"
+            value={clauseText}
+            onChange={(e) => setClauseText(e.target.value)}
+          />
+
+          {clauseError && <p style={{ color: 'var(--danger-color)', fontSize: '12px', marginBottom: '12px' }}>{clauseError}</p>}
+
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button 
+              className="btn btn-primary" 
+              onClick={handleAnalyzeClause} 
+              disabled={clauseLoading || !clauseText.trim()}
+              style={{ flexGrow: 1 }}
+            >
+              {clauseLoading ? <><RefreshCw className="animate-spin" size={14} /> Menganalisis...</> : 'Mulai Bedah Klausul'}
+            </button>
+            <button 
+              className="btn btn-secondary" 
+              onClick={() => {
+                setClauseText('Creator hereby assigns to Sponsor all intellectual property rights, copyright, and ownership of the Video in perpetuity, throughout the universe.');
+                setClauseError('');
+              }}
+              disabled={clauseLoading}
+            >
+              Gunakan Contoh Klausul
+            </button>
+          </div>
+
+          {clauseResult && (
+            <div style={{ 
+              marginTop: '20px', 
+              padding: '16px', 
+              borderRadius: 'var(--border-radius-md)', 
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-color)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  🔍 Hasil Bedah Klausul:
+                </span>
+                <span className="badge" style={{ 
+                  backgroundColor: `${getRiskColor(clauseResult.riskLevel)}1a`, 
+                  color: getRiskColor(clauseResult.riskLevel),
+                  fontWeight: '600'
+                }}>
+                  Risiko {clauseResult.riskLevel}
+                </span>
+              </div>
+
+              <div>
+                <h5 style={{ fontSize: '12px', fontWeight: '700', marginBottom: '4px', color: 'var(--text-primary)' }}>💡 Arti Klausul (Bahasa Awam):</h5>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                  {clauseResult.explanation}
+                </p>
+              </div>
+
+              {clauseResult.riskReason && (
+                <div>
+                  <h5 style={{ fontSize: '12px', fontWeight: '700', marginBottom: '4px', color: 'var(--danger-color)' }}>⚠️ Mengapa Berisiko?</h5>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                    {clauseResult.riskReason}
+                  </p>
+                </div>
+              )}
+
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <h5 style={{ fontSize: '12px', fontWeight: '700', color: 'var(--accent-color)' }}>✍️ Rekomendasi Klausul Tandingan:</h5>
+                  <button className="btn btn-secondary" style={{ padding: '2px 6px', fontSize: '10px', display: 'flex', alignItems: 'center', gap: '4px' }} onClick={handleCopyClauseProposal}>
+                    {copiedClauseProposal ? <><Check size={10} style={{ color: 'var(--success-color)' }} /> Tersalin</> : <><Copy size={10} /> Salin</>}
+                  </button>
+                </div>
+                <textarea 
+                  className="form-control" 
+                  style={{ minHeight: '80px', fontSize: '11px', fontFamily: 'monospace', lineHeight: '1.4', backgroundColor: 'var(--bg-tertiary)' }}
+                  value={clauseResult.counterProposal}
+                  readOnly
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
