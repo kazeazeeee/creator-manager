@@ -779,6 +779,306 @@ Tulis balasan langsung tanpa kalimat pengantar dari Anda di awal/akhir draf. And
 });
 
 // 4. AI Chat Bot Proxy
+// Local helper functions for offline fallback / rule-based command processing
+function parseIndonesianNumber(str) {
+  if (!str) return 0;
+  let clean = str.replace(/rp\.?/gi, '').trim();
+  const unitMatch = clean.match(/([\d.,]+)\s*(juta|jt|ribu|rb)?/i);
+  if (!unitMatch) return 0;
+  
+  let numStr = unitMatch[1];
+  const unit = unitMatch[2] ? unitMatch[2].toLowerCase() : '';
+  
+  if (!unit) {
+    if (numStr.includes('.') && numStr.includes(',')) {
+      numStr = numStr.replace(/\./g, '').replace(/,/g, '.');
+    } else if (numStr.includes('.')) {
+      const dotCount = (numStr.match(/\./g) || []).length;
+      const parts = numStr.split('.');
+      if (dotCount > 1 || (parts.length === 2 && parts[1].length === 3)) {
+        numStr = numStr.replace(/\./g, '');
+      } else {
+        numStr = numStr.replace(/,/g, '.');
+      }
+    } else if (numStr.includes(',')) {
+      const commaCount = (numStr.match(/,/g) || []).length;
+      const parts = numStr.split(',');
+      if (commaCount > 1 || (parts.length === 2 && parts[1].length === 3)) {
+        numStr = numStr.replace(/,/g, '');
+      } else {
+        numStr = numStr.replace(/,/g, '.');
+      }
+    }
+  } else {
+    numStr = numStr.replace(/,/g, '.');
+  }
+  
+  let val = parseFloat(numStr);
+  if (isNaN(val)) return 0;
+  
+  if (unit === 'juta' || unit === 'jt') {
+    val = val * 1000000;
+  } else if (unit === 'ribu' || unit === 'rb') {
+    val = val * 1000;
+  }
+  return val;
+}
+
+function parseIndonesianDate(str) {
+  if (!str) return null;
+  const months = {
+    januari: '01', jan: '01',
+    februari: '02', feb: '02',
+    maret: '03', mar: '03',
+    april: '04', apr: '04',
+    mei: '05',
+    juni: '06', jun: '06',
+    juli: '07', jul: '07',
+    agustus: '08', agu: '08', agt: '08',
+    september: '09', sep: '09',
+    oktober: '10', okt: '10',
+    november: '11', nov: '11',
+    desember: '12', des: '12'
+  };
+  
+  const dmyMatch = str.match(/(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+  if (dmyMatch) {
+    return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, '0')}-${dmyMatch[1].padStart(2, '0')}`;
+  }
+  
+  const ymdMatch = str.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (ymdMatch) {
+    return `${ymdMatch[1]}-${ymdMatch[2].padStart(2, '0')}-${ymdMatch[3].padStart(2, '0')}`;
+  }
+  
+  const words = str.toLowerCase().split(/\s+/);
+  let monthVal = '';
+  let dayVal = '';
+  let yearVal = new Date().getFullYear().toString();
+  
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i].replace(/[^a-z]/g, '');
+    if (months[w]) {
+      monthVal = months[w];
+      if (i > 0) {
+        const prev = words[i-1].replace(/[^\d]/g, '');
+        if (prev) dayVal = prev.padStart(2, '0');
+      }
+      if (i < words.length - 1) {
+        const next = words[i+1].replace(/[^\d]/g, '');
+        if (next && next.length === 4) yearVal = next;
+      }
+      break;
+    }
+  }
+  
+  if (dayVal && monthVal && yearVal) {
+    return `${yearVal}-${monthVal}-${dayVal}`;
+  }
+  
+  return null;
+}
+
+function runLocalChatSimulation(lastMsg, agentRole, teamMeetingAgents, db) {
+  const lowerText = lastMsg.toLowerCase();
+  const creatorProfile = db.profile || {};
+  let reply = '';
+  let actionExecuted = null;
+
+  // 1. Detect Rate Card Update command
+  if ((lowerText.includes('rate card') || lowerText.includes('rates') || lowerText.includes('tarif')) && 
+      (lowerText.includes('ubah') || lowerText.includes('ganti') || lowerText.includes('update') || lowerText.includes('set'))) {
+    const numMatch = lastMsg.match(/(?:menjadi|ke|jadi|rp\.?\s*)\s*([\d.,]+\s*(?:juta|jt|ribu|rb)?)/i) || lastMsg.match(/([\d.,]+\s*(?:juta|jt|ribu|rb)?)/i);
+    if (numMatch) {
+      const val = parseIndonesianNumber(numMatch[1]);
+      if (val > 0) {
+        db.profile = db.profile || {};
+        db.profile.rates = val;
+        writeDb(db);
+        
+        reply = `Tentu! Saya telah memperbarui rate card di profil Anda menjadi **Rp ${val.toLocaleString('id-ID')}** secara otomatis. Silakan periksa tab Profil/Media Kit Anda untuk melihat perubahannya!`;
+        actionExecuted = { type: 'profile', data: db.profile };
+        return { reply, actionExecuted };
+      }
+    }
+  }
+
+  // 2. Detect Invoice Creation command
+  if (lowerText.includes('invoice') || lowerText.includes('tagihan')) {
+    let clientName = 'Brand Target';
+    const clientMatch = lastMsg.match(/(?:invoice|tagihan)\s+(?:untuk\s+)?([a-zA-Z0-9\s-]+?)(?:\s+rp|\s+\d|\s+sebesar|\s+jatuh|$)/i);
+    if (clientMatch) {
+      clientName = clientMatch[1].trim();
+    }
+    
+    const amountMatch = lastMsg.match(/(?:rp\.?\s*|sebesar\s*|nilai\s*)\s*([\d.,]+\s*(?:juta|jt|ribu|rb)?)/i) || lastMsg.match(/([\d.,]+\s*(?:juta|jt|ribu|rb)?)/i);
+    let amount = 3000000;
+    if (amountMatch) {
+      amount = parseIndonesianNumber(amountMatch[1]) || amount;
+    }
+    
+    let dueDate = new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0];
+    const dateMatch = lastMsg.match(/(?:jatuh\s+tempo|tenggat|tanggal|sebelum)\s+(?:pada\s+)?([\d\w\s-]+)/i);
+    if (dateMatch) {
+      const parsedDate = parseIndonesianDate(dateMatch[1]);
+      if (parsedDate) dueDate = parsedDate;
+    }
+    
+    const newInvoice = {
+      id: `INV-${new Date().getFullYear()}-${String(Math.floor(1000 + Math.random() * 9000))}`,
+      clientName,
+      clientEmail: '',
+      projectName: `Kerja Sama Kampanye ${clientName}`,
+      issueDate: new Date().toISOString().split('T')[0],
+      dueDate,
+      items: [{ description: `Kerja Sama Kampanye ${clientName}`, qty: 1, rate: amount }],
+      amount,
+      status: 'pending'
+    };
+    db.invoices = db.invoices || [];
+    db.invoices.push(newInvoice);
+    writeDb(db);
+    
+    reply = `Tentu, saya sudah membuatkan invoice pending untuk **${clientName}** sebesar **Rp ${amount.toLocaleString('id-ID')}** yang jatuh tempo pada **${dueDate}**. Anda bisa mengecek dan mencetaknya langsung di tab Invoice!`;
+    actionExecuted = { type: 'invoice', data: newInvoice };
+    return { reply, actionExecuted };
+  }
+
+  // 3. Detect Task Creation command
+  if (lowerText.includes('tugas') || lowerText.includes('task') || lowerText.includes('buat pekerjaan') || lowerText.includes('tambah pekerjaan')) {
+    let brand = 'Brand Target';
+    const brandMatch = lastMsg.match(/(?:tugas|task)\s+(?:untuk\s+)?([a-zA-Z0-9\s-]+?)(?:\s+platform|\s+deadline|\s+tanggal|\s+untuk|$)/i);
+    if (brandMatch) {
+      brand = brandMatch[1].trim();
+    }
+    
+    let platform = 'Lainnya';
+    if (lowerText.includes('tiktok')) platform = 'TikTok';
+    else if (lowerText.includes('instagram') || lowerText.includes('ig')) platform = 'Instagram';
+    else if (lowerText.includes('youtube') || lowerText.includes('yt')) platform = 'YouTube';
+    
+    let dueDate = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+    const dateMatch = lastMsg.match(/(?:deadline|tenggat|tanggal|sebelum)\s+(?:pada\s+)?([\d\w\s-]+)/i);
+    if (dateMatch) {
+      const parsedDate = parseIndonesianDate(dateMatch[1]);
+      if (parsedDate) dueDate = parsedDate;
+    }
+    
+    const newTask = {
+      id: `task-${Date.now()}`,
+      title: `Kerja Sama Kampanye ${brand}`,
+      brand,
+      platform,
+      status: 'idea',
+      dueDate,
+      deliverables: 'Dibuat otomatis oleh Asisten',
+      notes: 'Dibuat otomatis via offline chat simulation.'
+    };
+    db.tasks = db.tasks || [];
+    db.tasks.push(newTask);
+    writeDb(db);
+    
+    reply = `Siap! Tugas baru untuk campaign **${brand}** (${platform}) dengan deadline **${dueDate}** sudah berhasil dibuat di kolom Ide pada papan Alur Kerja Anda.`;
+    actionExecuted = { type: 'task', data: newTask };
+    return { reply, actionExecuted };
+  }
+
+  // 4. Detect Calendar Event Creation command
+  if (lowerText.includes('agenda') || lowerText.includes('kalender') || lowerText.includes('jadwal')) {
+    let title = 'Agenda Baru';
+    let type = 'personal';
+    let brand = '';
+    let date = new Date().toISOString().split('T')[0];
+    
+    const titleMatch = lastMsg.match(/(?:agenda|jadwal|kalender)\s+([a-zA-Z0-9\s-]+?)(?:\s+tanggal|\s+pada|\s+untuk|$)/i);
+    if (titleMatch) {
+      title = titleMatch[1].trim();
+    }
+    
+    if (lowerText.includes('rapat') || lowerText.includes('meeting')) {
+      type = 'brand';
+    } else if (lowerText.includes('tenggat') || lowerText.includes('deadline')) {
+      type = 'deadline';
+    }
+    
+    const dateMatch = lastMsg.match(/(?:tanggal|pada|tenggat)\s+(?:pada\s+)?([\d\w\s-]+)/i);
+    if (dateMatch) {
+      const parsedDate = parseIndonesianDate(dateMatch[1]);
+      if (parsedDate) date = parsedDate;
+    }
+    
+    const brandsList = ['tokopedia', 'shopee', 'lazada', 'gojek', 'grab', 'tiktok', 'youtube', 'instagram', 'samsung', 'apple'];
+    for (const b of brandsList) {
+      if (lowerText.includes(b)) {
+        brand = b.charAt(0).toUpperCase() + b.slice(1);
+        type = 'brand';
+        break;
+      }
+    }
+    
+    const newEvent = {
+      id: `event-${Date.now()}`,
+      title,
+      start: date,
+      type,
+      brand
+    };
+    db.calendar = db.calendar || [];
+    db.calendar.push(newEvent);
+    writeDb(db);
+    
+    reply = `Tentu, saya sudah menjadwalkan agenda "**${title}**" pada tanggal **${date}** di Kalender Anda.`;
+    actionExecuted = { type: 'calendar', data: newEvent };
+    return { reply, actionExecuted };
+  }
+
+  // 5. Default conversational fallback
+  if (agentRole === 'Team Meeting' && teamMeetingAgents && teamMeetingAgents.length > 0) {
+    reply = `Halo! Kami telah mendiskusikan pertanyaan/permintaan Anda mengenai: "${lastMsg}"\n\n`;
+    
+    const specializationsFallback = {
+      'Team Kampanye': `- 📈 **[Team Kampanye]**: "Berdasarkan performa konten Anda, kita perlu terus memantau retensi dan ER pasca-upload agar performa kampanye optimal."\n`,
+      'Team Reporter': `- 📊 **[Team Reporter]**: "Kami siap merekam performa tayangan dan likes untuk laporan kampanye selanjutnya."\n`,
+      'Team Legal': `- 🔒 **[Team Legal]**: "Pastikan tidak ada klausul eksklusivitas yang terlalu mengekang atau denda yang tidak wajar pada kesepakatan ini."\n`,
+      'Team Negosiasi': `- 🤝 **[Team Negosiasi]**: "Kita bisa mengajukan rate card standar kita dengan tetap membuka ruang diskusi untuk negosiasi minor."\n`,
+      'Team Sponsor': `- 💼 **[Team Sponsor]**: "Mari kita susun draf email penawaran yang menonjolkan keunikan niche asmr/mukbang Anda!"\n`,
+      'Team Creative': `- 🎨 **[Team Creative]**: "Konsep konten harus segar dan langsung memicu rasa lapar/penasaran penonton dalam 3 detik pertama."\n`,
+      'Team Riset': `- 🔍 **[Team Riset]**: "Saat ini tren konten mukbang berdurasi pendek sedang naik daun. Gunakan audio latar yang sedang viral!"\n`,
+      'Team PR': `- 📢 **[Team PR]**: "Mari jaga hubungan baik dengan audiens dan brand untuk reputasi jangka panjang."\n`,
+      'Team Finansial': `- 💰 **[Team Finansial]**: "Hitung margin bersih setelah dipotong komisi agensi dan pajak agar keuangan bisnis Anda sehat."\n`,
+      'Team Komunitas': `- 💬 **[Team Komunitas]**: "Jangan lupa membalas komentar-komentar awal untuk meningkatkan interaksi audiens."\n`,
+      'Team Kesehatan': `- 🌱 **[Team Kesehatan]**: "Tetap jaga kesehatan dan hindari burnout dengan menjadwalkan hari libur di antara proses syuting!"\n`,
+      'Team Brief': `- 📋 **[Team Brief]**: "Pastikan semua hal wajib yang tertulis di brief sudah masuk ke draf naskah video."\n`
+    };
+
+    teamMeetingAgents.forEach(agent => {
+      if (specializationsFallback[agent]) {
+        reply += specializationsFallback[agent];
+      } else {
+        reply += `- 👤 **[${agent}]**: "Kami siap berkolaborasi untuk menyukseskan project ini bersama Anda."\n`;
+      }
+    });
+
+    reply += `\n**Kesimpulan Rapat:** Rapat Tim menyarankan Anda untuk menghubungkan API Key SumoPod di Setelan untuk mendapatkan analisis diskusi AI mendalam dan dinamis!`;
+  } else if (agentRole) {
+    reply = `[Simulasi Agen Spesialis: ${agentRole}]\n\nHalo! Saya adalah spesialis peranan **${agentRole}**.\n\nSebagai spesialis ${agentRole}, saya siap membantu Anda menyelesaikan masalah spesifik ini secara mendalam. Untuk mendapatkan jawaban yang disesuaikan secara dinamis oleh kecerdasan buatan saya, silakan masukkan API Key SumoPod di menu Setelan terlebih dahulu.\n\nSementara itu, pastikan draf atau pertanyaan Anda terkait peran saya sudah lengkap!`;
+  } else {
+    // Normal Chat simulation based on keywords
+    if (lowerText.includes('harga') || lowerText.includes('rate card') || lowerText.includes('nego')) {
+      reply = `Terkait negosiasi rate card Anda yang saat ini berada di angka **Rp ${(creatorProfile.rates || 6000000).toLocaleString('id-ID')}**, penting menjaga profesionalitas. Contoh balasan yang bisa Anda kirimkan:\n\n"Halo Tim Brand,\n\nTerima kasih atas tawarannya. Terkait anggaran kampanye, tarif standar kami untuk deliverables yang diminta adalah Rp${(creatorProfile.rates || 6000000).toLocaleString('id-ID')}. Namun, kami terbuka untuk mendiskusikan penyesuaian deliverables agar selaras dengan budget Anda. Bagaimana menurut Anda?"\n\nAnda dapat mengoreksi draf ini sesuai kebutuhan. Hubungkan API Key di Setelan untuk asisten AI dinamis.`;
+    } else if (lowerText.includes('konten') || lowerText.includes('ide')) {
+      reply = `Berikut 3 ide konten yang bisa Anda garap hari ini:\n\n1. **A Day in the Life of a Creator**: Tunjukkan di balik layar persiapan syuting dan editing secara estetik.\n2. **Review Jujur & Detail**: Bedah kelebihan dan kekurangan produk secara mendalam.\n3. **Tips & Trik Cepat**: Bagikan resep rahasia atau hack praktis di niche Anda.\n\nApakah Anda ingin saya membuatkan skrip untuk salah satunya? Hubungkan API Key di Setelan untuk asisten AI dinamis.`;
+    } else if (lowerText.includes('revisi') || lowerText.includes('klien')) {
+      reply = `Menghadapi revisi berlebih sebaiknya dikomunikasikan secara asertif:\n\n"Halo Tim Klien,\n\nTerkait revisi tambahan yang diajukan, kami ingin mengonfirmasi bahwa batasan revisi gratis sesuai kesepakatan awal (brief) adalah 2 kali, yang telah kita penuhi. Untuk perubahan di luar itu, kami akan mengenakan biaya tambahan (revisi fee) sebesar 15% dari total nilai proyek per revisi. Mohon konfirmasinya sebelum kami melanjutkan."`;
+    } else {
+      reply = `Halo! Saya adalah Manajer Digital Anda. Saya siap membantu Anda mengelola bisnis kreator, mengatur jadwal kalender, membuat invoice, melacak alur kerja Kanban, dan berdiskusi kreatif. \n\n*Catatan: Saat ini, aplikasi mendeteksi belum ada API Key SumoPod yang diatur di menu Setelan, sehingga saya berjalan dalam mode simulasi cerdas luring. Anda bisa menghubungkan API Key Anda untuk mengaktifkan seluruh kemampuan analisis dinamis AI.*`;
+    }
+  }
+
+  return { reply, actionExecuted };
+}
+
+// 4. AI Chat Bot Proxy
 app.post('/api/ai/chat', async (req, res) => {
   const db = readDb();
   const apiKey = getApiKey(db);
@@ -905,7 +1205,7 @@ ${creatorContext}
 Aturan Penulisan & Format Balasan Anda:
 1. **Singkat & Efisien:** Balas secara singkat dan padat. Detail panjang hanya jika diminta.
 2. **Gaya Adaptif:** Formal untuk bisnis, kasual untuk obrolan santai/bercanda.
-3. **Gunakan Data Riil:** Jika kreator tanya soal data mereka (postingan, views, invoice, jadwal, pipeline), SELALU jawab dari data di atas. JANGAN pernah bilang "tidak punya akses".
+3. **Gunakan Data Riil:** Jika kreator tanya soal data mereka (postingan, views, invoice, jadwal, pipeline), SELALU jawab dari data di atas. JANGAN pernah billing "tidak punya akses".
 4. **Keterbacaan:** Bold pada kata penting. List hanya jika perlu.
 5. **Aksi Nyata / Tool Calling (PENTING):** Anda memiliki kemampuan untuk melakukan aksi nyata langsung pada database aplikasi jika Kreator meminta Anda untuk menambah, menghapus, atau mengubah data (seperti tugas, jadwal/kalender, invoice, atau rate card).
    Jika Anda mendeteksi bahwa Kreator meminta Anda melakukan tindakan tersebut, Anda wajib menyisipkan tag instruksi eksekusi di bagian paling akhir balasan Anda (setelah pesan teks Anda) menggunakan format JSON berikut:
@@ -928,76 +1228,102 @@ Tanggapan Baru Anda (singkat & tepat sasaran):
 `;
 
   try {
-    const aiResponse = await callSumopod(prompt, apiKey, selectedModel, false);
-    let replyText = aiResponse || '';
+    let replyText = '';
     let actionExecuted = null;
+    let useFallback = false;
 
-    // Detect if model outputted EXECUTE_ACTION
-    const actionRegex = /\[EXECUTE_ACTION:\s*(\{[\s\S]*?\})\s*\]/;
-    const match = replyText.match(actionRegex);
-    if (match) {
+    if (!apiKey) {
+      useFallback = true;
+    } else {
       try {
-        const actionObj = JSON.parse(match[1]);
-        const dbCurrent = readDb();
-        
-        if (actionObj.action === 'create_task') {
-          const newTask = {
-            id: `task-${Date.now()}`,
-            title: actionObj.data.title,
-            brand: actionObj.data.brand,
-            platform: actionObj.data.platform || 'Lainnya',
-            status: 'idea', // Default to Idea status on kanban
-            dueDate: actionObj.data.dueDate || new Date().toISOString().split('T')[0],
-            deliverables: 'Dibuat otomatis oleh Asisten AI',
-            notes: 'Dibuat otomatis via percakapan Manajer Digital.'
-          };
-          dbCurrent.tasks = dbCurrent.tasks || [];
-          dbCurrent.tasks.push(newTask);
-          actionExecuted = { type: 'task', data: newTask };
-        } 
-        else if (actionObj.action === 'create_invoice') {
-          const newInvoice = {
-            id: `INV-${new Date().getFullYear()}-${String(Math.floor(1000 + Math.random() * 9000))}`,
-            clientName: actionObj.data.clientName,
-            clientEmail: '',
-            projectName: actionObj.data.projectName || 'Kerja Sama Kampanye',
-            issueDate: new Date().toISOString().split('T')[0],
-            dueDate: actionObj.data.dueDate || new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
-            items: [{ description: actionObj.data.projectName || 'Kerja Sama Kampanye', qty: 1, rate: actionObj.data.amount }],
-            amount: actionObj.data.amount,
-            status: 'pending'
-          };
-          dbCurrent.invoices = dbCurrent.invoices || [];
-          dbCurrent.invoices.push(newInvoice);
-          actionExecuted = { type: 'invoice', data: newInvoice };
-        } 
-        else if (actionObj.action === 'create_calendar_event') {
-          const newEvent = {
-            id: `event-${Date.now()}`,
-            title: actionObj.data.title,
-            start: actionObj.data.date || new Date().toISOString().split('T')[0],
-            type: actionObj.data.type || 'personal',
-            brand: actionObj.data.brand || ''
-          };
-          dbCurrent.calendar = dbCurrent.calendar || [];
-          dbCurrent.calendar.push(newEvent);
-          actionExecuted = { type: 'calendar', data: newEvent };
-        } 
-        else if (actionObj.action === 'update_rates') {
-          dbCurrent.profile = dbCurrent.profile || {};
-          dbCurrent.profile.rates = actionObj.data.rates;
-          actionExecuted = { type: 'profile', data: dbCurrent.profile };
-        }
-
-        writeDb(dbCurrent);
-        
-        // Clean the EXECUTE_ACTION block from the text response
-        replyText = replyText.replace(actionRegex, '').trim();
-      } catch (errParse) {
-        console.error("Failed executing AI action:", errParse.message);
+        const aiResponse = await callSumopod(prompt, apiKey, selectedModel, false);
+        replyText = aiResponse || '';
+      } catch (errCall) {
+        console.warn("SumoPod API call failed, falling back to local simulation:", errCall.message);
+        useFallback = true;
       }
     }
 
+    if (useFallback) {
+      const dbCurrent = readDb();
+      const result = runLocalChatSimulation(lastMsg, agentRole, teamMeetingAgents, dbCurrent);
+      replyText = result.reply;
+      actionExecuted = result.actionExecuted;
+    } else {
+      // Detect if model outputted EXECUTE_ACTION
+      const actionRegex = /\[EXECUTE_ACTION:\s*(\{[\s\S]*?\})\s*\]/;
+      const match = replyText.match(actionRegex);
+      if (match) {
+        try {
+          const actionObj = JSON.parse(match[1]);
+          const dbCurrent = readDb();
+          
+          if (actionObj.action === 'create_task') {
+            const newTask = {
+              id: `task-${Date.now()}`,
+              title: actionObj.data.title,
+              brand: actionObj.data.brand,
+              platform: actionObj.data.platform || 'Lainnya',
+              status: 'idea', // Default to Idea status on kanban
+              dueDate: actionObj.data.dueDate || new Date().toISOString().split('T')[0],
+              deliverables: 'Dibuat otomatis oleh Asisten AI',
+              notes: 'Dibuat otomatis via percakapan Manajer Digital.'
+            };
+            dbCurrent.tasks = dbCurrent.tasks || [];
+            dbCurrent.tasks.push(newTask);
+            actionExecuted = { type: 'task', data: newTask };
+          } 
+          else if (actionObj.action === 'create_invoice') {
+            const newInvoice = {
+              id: `INV-${new Date().getFullYear()}-${String(Math.floor(1000 + Math.random() * 9000))}`,
+              clientName: actionObj.data.clientName,
+              clientEmail: '',
+              projectName: actionObj.data.projectName || 'Kerja Sama Kampanye',
+              issueDate: new Date().toISOString().split('T')[0],
+              dueDate: actionObj.data.dueDate || new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
+              items: [{ description: actionObj.data.projectName || 'Kerja Sama Kampanye', qty: 1, rate: actionObj.data.amount }],
+              amount: actionObj.data.amount,
+              status: 'pending'
+            };
+            dbCurrent.invoices = dbCurrent.invoices || [];
+            dbCurrent.invoices.push(newInvoice);
+            actionExecuted = { type: 'invoice', data: newInvoice };
+          } 
+          else if (actionObj.action === 'create_calendar_event') {
+            const newEvent = {
+              id: `event-${Date.now()}`,
+              title: actionObj.data.title,
+              start: actionObj.data.date || new Date().toISOString().split('T')[0],
+              type: actionObj.data.type || 'personal',
+              brand: actionObj.data.brand || ''
+            };
+            dbCurrent.calendar = dbCurrent.calendar || [];
+            dbCurrent.calendar.push(newEvent);
+            actionExecuted = { type: 'calendar', data: newEvent };
+          } 
+          else if (actionObj.action === 'update_rates') {
+            dbCurrent.profile = dbCurrent.profile || {};
+            dbCurrent.profile.rates = actionObj.data.rates;
+            actionExecuted = { type: 'profile', data: dbCurrent.profile };
+          }
+
+          writeDb(dbCurrent);
+          
+          // Clean the EXECUTE_ACTION block from the text response
+          replyText = replyText.replace(actionRegex, '').trim();
+        } catch (errParse) {
+          console.error("Failed executing AI action:", errParse.message);
+        }
+      } else {
+        // Double-check fallback parse: if AI forgot but the text matches a command
+        const dbCurrent = readDb();
+        const result = runLocalChatSimulation(lastMsg, agentRole, teamMeetingAgents, dbCurrent);
+        if (result.actionExecuted) {
+          actionExecuted = result.actionExecuted;
+          replyText = `${replyText}\n\n[Sistem Autopilot]: Saya juga telah mengeksekusi tindakan berikut berdasarkan permintaan Anda: ${result.reply}`;
+        }
+      }
+    }
     res.json({ reply: replyText, actionExecuted });
   } catch (err) {
     console.error(err);

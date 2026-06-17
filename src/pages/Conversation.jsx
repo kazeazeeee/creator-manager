@@ -511,56 +511,12 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask, refreshAllData 
         ];
         startThinkingAnimation(thinkSteps);
 
-        let reply = '';
-        if (!apiKey) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          reply = `[Simulasi Rapat Tim AI: ${selectedAgents.join(' & ')}]\n\nHalo Kreator! Berikut adalah hasil rangkuman diskusi tim kami untuk membantu Anda:\n\n`;
-          
-          if (selectedAgents.includes('Team Brief')) {
-            reply += `- 📄 **[Team Brief]**: "Pastikan semua deliverables wajib dari brand diperiksa kembali. Jangan sampai ada instruksi video yang terlewat saat syuting."\n`;
-          }
-          if (selectedAgents.includes('Team Finansial')) {
-            reply += `- 💰 **[Team Finansial]**: "Untuk anggaran proyek ini, jangan lupa sisihkan 10% untuk pajak PPh 21/23. Pastikan termin pembayaran bersih aman."\n`;
-          }
-          if (selectedAgents.includes('Team Legal')) {
-            reply += `- 🔒 **[Team Legal]**: "Periksa klausul eksklusivitas kontrak brand. Hindari eksklusivitas kategori yang terlalu lama (>3 bulan) jika budget minim."\n`;
-          }
-          if (selectedAgents.includes('Team Creative')) {
-            reply += `- 🎨 **[Team Creative]**: "Rekomendasi hook video: Tunjukkan visual hasil akhir masakan di 3 detik pertama dengan audio ASMR."\n`;
-          }
-          if (selectedAgents.includes('Team Riset')) {
-            reply += `- 🔍 **[Team Riset]**: "Gunakan hashtag populer saat ini di niche kuliner dan jadwalkan postingan pada jam 18:00 WIB."\n`;
-          }
-          if (selectedAgents.includes('Team Negosiasi')) {
-            reply += `- 🤝 **[Team Negosiasi]**: "Jika brand menawarkan rate rendah, ajukan penyesuaian deliverables secara profesional daripada langsung menolak."\n`;
-          }
-          if (selectedAgents.includes('Team Sponsor')) {
-            reply += `- 🏹 **[Team Sponsor]**: "Siapkan media kit terupdate Anda dengan social proof pencapaian ER kuat Anda untuk pitch brand ini."\n`;
-          }
-          if (selectedAgents.includes('Team Kampanye')) {
-            reply += `- 📈 **[Team Kampanye]**: "Evaluasi target audiens dan deliverables brief agar sesuai dengan performa rata-rata postingan sejenis."\n`;
-          }
-          if (selectedAgents.includes('Team PR')) {
-            reply += `- 📣 **[Team PR]**: "Jaga reputasi personal brand Anda dengan memastikan penyampaian sponsor yang natural."\n`;
-          }
-          if (selectedAgents.includes('Team Reporter')) {
-            reply += `- 📊 **[Team Reporter]**: "Kami akan merekam performa postingan ini dan menyusun data ROI untuk pelaporan kelak."\n`;
-          }
-          if (selectedAgents.includes('Team Komunitas')) {
-            reply += `- 💬 **[Team Komunitas]**: "Siapkan respons ramah dan ajakan interaksi agar penonton aktif berkomentar."\n`;
-          }
-          if (selectedAgents.includes('Team Kesehatan')) {
-            reply += `- 🌱 **[Team Kesehatan]**: "Ingat untuk beristirahat di sela-sela produksi agar kreativitas tetap optimal!"\n`;
-          }
-
-          reply += `\nTim menyarankan untuk menghubungkan API Key SumoPod Anda di menu Setelan untuk mendapatkan analisis diskusi AI yang jauh lebih dinamis dan spesifik sesuai pesan Anda!`;
-        } else {
-          const res = await apiChatWithManager(historyForApi, 'Team Meeting', selectedAgents);
-          reply = res.reply;
+        const res = await apiChatWithManager(historyForApi, 'Team Meeting', selectedAgents);
+        if (res.actionExecuted && refreshAllData) {
+          refreshAllData();
         }
 
-        const msgTeamResponse = { sender: 'assistant', senderName: '👥 Rapat Tim', text: reply };
+        const msgTeamResponse = { sender: 'assistant', senderName: '👥 Rapat Tim', text: res.reply };
         const finalMessages = [...updatedMessagesForState, msgTeamResponse];
 
         saveSessions(sessions.map(s => {
@@ -571,45 +527,17 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask, refreshAllData 
         }));
       } else {
         // --- Normal Single Agent Flow ---
-        if (!apiKey) {
-          // Simulated fallback response
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          
-          let reply = `Tentu! Saya siap membantu. Namun, agar saya bisa berpikir secara dinamis menggunakan kecerdasan buatan, mohon masukkan API Key Anda di menu Setelan terlebih dahulu.`;
-          
-          if (detectedAgentRole) {
-            reply = `[Simulasi Agen Spesialis: ${detectedAgentRole}]\n\nHalo! Saya adalah spesialis peranan **${detectedAgentRole}**. Saya mendeteksi Anda memanggil saya melalui mention **${detectedAgentMention}**.\n\nSebagai spesialis ${detectedAgentRole}, saya siap membantu Anda menyelesaikan masalah spesifik ini secara mendalam. Untuk mendapatkan jawaban yang disesuaikan secara dinamis oleh kecerdasan buatan saya, silakan masukkan API Key SumoPod di menu Setelan terlebih dahulu.\n\nSementara itu, pastikan draf atau pertanyaan Anda terkait peran saya sudah lengkap!`;
-          } else {
-            const textLowerCheck = text.toLowerCase();
-            if (textLowerCheck.includes('harga') || textLowerCheck.includes('rate card') || textLowerCheck.includes('nego')) {
-              reply = `Untuk negosiasi rate card, penting menjaga profesionalitas. Contoh balasan yang bisa Anda kirimkan:\n\n"Halo Tim Brand,\n\nTerima kasih atas tawarannya. Terkait anggaran kampanye, tarif standar kami untuk deliverables yang diminta adalah Rp${(creatorProfile?.rates || 5000000).toLocaleString('id-ID')}. Namun, kami terbuka untuk mendiskusikan penyesuaian deliverables agar selaras dengan budget Anda. Bagaimana menurut Anda?"\n\nAnda dapat mengoreksi draf ini sesuai kebutuhan.`;
-            } else if (textLowerCheck.includes('konten') || textLowerCheck.includes('ide')) {
-              reply = `Berikut 3 ide konten yang bisa Anda garap hari ini:\n\n1. **A Day in the Life of a Creator**: Tunjukkan di balik layar persiapan syuting dan editing secara estetik.\n2. **Review Jujur & Detail**: Bedah kelebihan dan kekurangan produk secara mendalam.\n3. **Tips & Trik Cepat**: Bagikan resep rahasia atau hack praktis di niche Anda.\n\nApakah Anda ingin saya membuatkan skrip untuk salah satunya?`;
-            } else if (textLowerCheck.includes('revisi') || textLowerCheck.includes('klien')) {
-              reply = `Menghadapi revisi berlebih sebaiknya dikomunikasikan secara asertif:\n\n"Halo Tim Klien,\n\nTerkait revisi tambahan yang diajukan, kami ingin mengonfirmasi bahwa batasan revisi gratis sesuai kesepakatan awal (brief) adalah 2 kali, yang telah kita penuhi. Untuk perubahan di luar itu, kami akan mengenakan biaya tambahan (revisi fee) sebesar 15% dari total nilai proyek per revisi. Mohon konfirmasinya sebelum kami melanjutkan."`;
-            }
-          }
-          
-          const finalMessages = [...updatedMessagesForState, { sender: 'assistant', text: reply }];
-          saveSessions(sessions.map(s => {
-            if (s.id === activeSessionId) {
-              return { ...s, messages: finalMessages };
-            }
-            return s;
-          }));
-        } else {
-          const res = await apiChatWithManager(historyForApi, detectedAgentRole);
-          if (res.actionExecuted && refreshAllData) {
-            refreshAllData();
-          }
-          const finalMessages = [...updatedMessagesForState, { sender: 'assistant', text: res.reply }];
-          saveSessions(sessions.map(s => {
-            if (s.id === activeSessionId) {
-              return { ...s, messages: finalMessages };
-            }
-            return s;
-          }));
+        const res = await apiChatWithManager(historyForApi, detectedAgentRole);
+        if (res.actionExecuted && refreshAllData) {
+          refreshAllData();
         }
+        const finalMessages = [...updatedMessagesForState, { sender: 'assistant', text: res.reply }];
+        saveSessions(sessions.map(s => {
+          if (s.id === activeSessionId) {
+            return { ...s, messages: finalMessages };
+          }
+          return s;
+        }));
       }
     } catch (err) {
       console.error(err);
