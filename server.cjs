@@ -778,6 +778,29 @@ app.post('/api/ai/chat', async (req, res) => {
     return `${msg.sender === 'user' ? 'Kreator' : (agentRole || 'Manajer Digital (Anda)')}: ${msg.text}`;
   }).join('\n');
 
+  const profile = db.profile || {};
+  const recentPosts = profile.recentPosts || [];
+
+  let creatorContext = `Informasi Profil Kreator:
+- Nama: ${profile.name || 'Tidak diketahui'}
+- Niche/Kategori: ${profile.niche || 'Tidak diketahui'}
+- TikTok Handle/URL: ${profile.tiktok || 'Belum diatur'}
+- YouTube Handle/URL: ${profile.youtube || 'Belum diatur'}
+- Instagram Handle/URL: ${profile.instagram || 'Belum diatur'}
+- Email Bisnis: ${profile.email || 'Tidak diketahui'}
+- Pengikut (TikTok/YT/IG): ${profile.followersTiktok || 0} / ${profile.followersYoutube || 0} / ${profile.followersInstagram || 0}
+`;
+
+  if (recentPosts.length > 0) {
+    creatorContext += `\nPostingan Media Sosial Terakhir Kreator (Telah Disinkronisasi):`;
+    const latestPosts = recentPosts.slice(0, 5);
+    latestPosts.forEach((post, index) => {
+      creatorContext += `\n${index + 1}. [${post.platform}] "${post.title}" - Diunggah: ${post.uploadDate} - Views: ${post.views.toLocaleString('id-ID')} - Likes: ${post.likes.toLocaleString('id-ID')} - Komentar: ${post.comments.toLocaleString('id-ID')} - Link: ${post.url}`;
+    });
+  } else {
+    creatorContext += `\nKreator belum melakukan sinkronisasi postingan media sosial terakhirnya.`;
+  }
+
   let systemPrompt = `Anda adalah "Manajer Digital" pribadi sekaligus teman diskusi santai yang cerdas, suportif, dan fleksibel untuk seorang konten kreator.
 Selain membantu urusan bisnis/sponsorship/konten, Anda juga bisa menjadi teman ngobrol biasa, bertukar pikiran, curhat, bahkan bercanda secara natural menyesuaikan dengan mood dan kondisi Kreator.`;
 
@@ -788,6 +811,8 @@ Tugas Anda adalah membantu mereka secara fokus sesuai keahlian peran spesifik An
 
   const prompt = `
 ${systemPrompt}
+
+${creatorContext}
 
 Aturan Penulisan & Format Balasan Anda:
 1. **Panjang Balasan & Efisiensi:** Berikan balasan yang **singkat, padat, dan efisien**. Hindari penjelasan yang terlalu panjang atau bertele-tele jika tidak diperlukan. Berikan penjelasan detail hanya bila diminta atau benar-benar krusial.
