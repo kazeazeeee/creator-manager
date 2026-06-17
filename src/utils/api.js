@@ -110,10 +110,11 @@ export const apiGenerateDraft = (scenario, tone, details, creatorProfile) => req
   body: JSON.stringify({ scenario, tone, details, creatorProfile })
 });
 
-export const apiChatWithManager = (messageHistory, agentRole = null) => request('/ai/chat', {
+export const apiChatWithManager = (messageHistory, agentRole = null, teamMeetingAgents = null) => request('/ai/chat', {
   method: 'POST',
-  body: JSON.stringify({ messageHistory, agentRole })
+  body: JSON.stringify({ messageHistory, agentRole, teamMeetingAgents })
 });
+
 
 export const apiGenerateScript = (brand, product, concept, duration) => request('/ai/generate-script', {
   method: 'POST',

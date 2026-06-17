@@ -47,7 +47,7 @@ const AGENTS = [
   },
   {
     id: 'campaign',
-    name: 'Campaign Analyst',
+    name: 'Team Kampanye',
     role: 'Agen Penganalisis Kampanye',
     description: 'Membedah brief brand menjadi checklist aksi & tenggat waktu.',
     icon: Sparkles,
@@ -56,7 +56,7 @@ const AGENTS = [
   },
   {
     id: 'contract',
-    name: 'Contract Guard',
+    name: 'Team Legal',
     role: 'Agen Pengawal Kontrak',
     description: 'Mendeteksi risiko hukum, eksklusivitas, & klausul menjebak.',
     icon: AlertTriangle,
@@ -65,7 +65,7 @@ const AGENTS = [
   },
   {
     id: 'negotiator',
-    name: 'Diplomat Negotiator',
+    name: 'Team Negosiasi',
     role: 'Agen Komunikator & Negosiasi',
     description: 'Menulis draf email/chat negosiasi rate card & penyesuaian revisi.',
     icon: MessageSquare,
@@ -74,7 +74,7 @@ const AGENTS = [
   },
   {
     id: 'outreach',
-    name: 'Sponsor Hunter',
+    name: 'Team Sponsor',
     role: 'Agen Pemburu Sponsor / Cold Pitch',
     description: 'Membuat email penawaran kerja sama (cold pitch) persuasif ke brand.',
     icon: Mail,
@@ -83,7 +83,7 @@ const AGENTS = [
   },
   {
     id: 'creative',
-    name: 'Creative Director',
+    name: 'Team Creative',
     role: 'Agen Penulis Naskah & Ide Hook',
     description: 'Merancang naskah video pendek kreatif per detik & ide hook 3 detik.',
     icon: Video,
@@ -92,7 +92,7 @@ const AGENTS = [
   },
   {
     id: 'trend',
-    name: 'Trend Spotter',
+    name: 'Team Riset',
     role: 'Agen Riset Tren & SEO Konten',
     description: 'Riset audio populer & kata kunci pencarian teratas di algoritma.',
     icon: Search,
@@ -101,7 +101,7 @@ const AGENTS = [
   },
   {
     id: 'pr',
-    name: 'PR Manager',
+    name: 'Team PR',
     role: 'Agen Branding & PR Krisis',
     description: 'Menyusun draf biodata, rilis pers, & respons krisis reputasi.',
     icon: Award,
@@ -110,7 +110,7 @@ const AGENTS = [
   },
   {
     id: 'finance',
-    name: 'Accountant Manager',
+    name: 'Team Finansial',
     role: 'Agen Keuangan & Administrasi',
     description: 'Membuat draf invoice tagihan & pesan pengingat jatuh tempo.',
     icon: FileText,
@@ -119,7 +119,7 @@ const AGENTS = [
   },
   {
     id: 'community',
-    name: 'Community Manager',
+    name: 'Team Komunitas',
     role: 'Agen Manajemen Komunitas',
     description: 'Menyusun draf balasan ramah & interaktif untuk komentar netizen.',
     icon: MessageCircle,
@@ -128,7 +128,7 @@ const AGENTS = [
   },
   {
     id: 'analytics',
-    name: 'Campaign Auditor',
+    name: 'Team Reporter',
     role: 'Agen Analisis Kinerja Kampanye',
     description: 'Menghitung ER/CTR & menyusun draf laporan bukti performa.',
     icon: BarChart3,
@@ -137,7 +137,7 @@ const AGENTS = [
   },
   {
     id: 'wellness',
-    name: 'Mindset Buddy',
+    name: 'Team Kesehatan',
     role: 'Agen Wellness & Anti-Burnout',
     description: 'Audit beban pikiran & rekomendasi jadwal detoks media sosial.',
     icon: Heart,

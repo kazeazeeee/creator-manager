@@ -16,18 +16,18 @@ import {
 import { apiChatWithManager, apiAnalyzeImage, apiParsePdf, apiParsePptx, apiExtractDraft } from '../utils/api';
 
 const AGENT_MENTIONS_MAP = {
-  '@campaignanalyst': 'Campaign Analyst',
-  '@contractguard': 'Contract Guard',
-  '@diplomatnegotiator': 'Diplomat Negotiator',
-  '@sponsorhunter': 'Sponsor Hunter',
-  '@creativedirector': 'Creative Director',
-  '@trendspotter': 'Trend Spotter',
-  '@prcrisis': 'PR Crisis Specialist',
-  '@communityengagement': 'Community Engagement Agent',
-  '@campaignanalytics': 'Campaign Analytics Agent',
-  '@wellnessguard': 'Wellness Guard',
-  '@briefmaster': 'Brief Master',
-  '@financialcoach': 'Financial Coach'
+  '@team_kampanye': 'Team Kampanye',
+  '@team_legal': 'Team Legal',
+  '@team_negosiasi': 'Team Negosiasi',
+  '@team_sponsor': 'Team Sponsor',
+  '@team_creative': 'Team Creative',
+  '@team_riset': 'Team Riset',
+  '@team_pr': 'Team PR',
+  '@team_komunitas': 'Team Komunitas',
+  '@team_reporter': 'Team Reporter',
+  '@team_kesehatan': 'Team Kesehatan',
+  '@team_brief': 'Team Brief',
+  '@team_finansial': 'Team Finansial'
 };
 
 const SUGGESTIONS = [
@@ -68,8 +68,10 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask, refreshAllData 
 
   // Team Meeting states
   const [teamMeetingMode, setTeamMeetingMode] = useState(false);
-  const [meetingAgent1, setMeetingAgent1] = useState('Brief Master');
-  const [meetingAgent2, setMeetingAgent2] = useState('Financial Coach');
+  const [meetingAgent1, setMeetingAgent1] = useState('Team Brief');
+  const [meetingAgent2, setMeetingAgent2] = useState('Team Finansial');
+  const [meetingAgent3, setMeetingAgent3] = useState('None');
+
 
 
   // Dynamic thinking status helper
@@ -496,62 +498,70 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask, refreshAllData 
 
     try {
       if (teamMeetingMode) {
-        // --- Team Meeting Mode Sequence ---
-        const cleanAgentName = (name) => `@${name.replace(/\s+/g, '')}`;
+        // --- Team Meeting Mode: Single Collaborative Response ---
+        const selectedAgents = [meetingAgent1, meetingAgent2, meetingAgent3].filter(a => a && a !== 'None');
         
-        // 1. Agent 1 Turn
-        const thinkSteps1 = [
-          `👥 Rapat Tim: Memanggil ${cleanAgentName(meetingAgent1)}...`,
-          `🧠 ${cleanAgentName(meetingAgent1)} sedang mempelajari pesan...`,
-          `✍️ ${cleanAgentName(meetingAgent1)} menyusun tanggapan...`
+        const cleanAgentName = (name) => `@${name.toLowerCase().replace(/\s+/g, '_')}`;
+        const formattedAgentsNames = selectedAgents.map(cleanAgentName).join(', ');
+
+        const thinkSteps = [
+          `👥 Rapat Tim: Memulai diskusi dengan ${formattedAgentsNames}...`,
+          `🧠 Mencocokkan perspektif ${selectedAgents.length} asisten...`,
+          `✍️ Menggabungkan hasil keputusan rapat tim...`
         ];
-        startThinkingAnimation(thinkSteps1);
+        startThinkingAnimation(thinkSteps);
 
-        let reply1 = '';
+        let reply = '';
         if (!apiKey) {
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          reply1 = `[Simulasi ${cleanAgentName(meetingAgent1)}]\n\nHalo! Saya telah mempelajari pesan Anda mengenai "${text}". Menurut perspektif saya, penting bagi kita untuk berfokus pada detail kesepakatan dan menyelaraskan deliverables. Mari kita dengar tanggapan dari rekan saya, ${cleanAgentName(meetingAgent2)}, untuk pembahasan lebih komprehensif.`;
-        } else {
-          const res1 = await apiChatWithManager(historyForApi, meetingAgent1);
-          reply1 = res1.reply;
-        }
-
-        const msgAgent1 = { sender: 'assistant', senderName: cleanAgentName(meetingAgent1), text: reply1 };
-        const afterAgent1Messages = [...updatedMessagesForState, msgAgent1];
-        
-        // Save Agent 1 reply
-        saveSessions(sessions.map(s => {
-          if (s.id === activeSessionId) {
-            return { ...s, messages: afterAgent1Messages };
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          reply = `[Simulasi Rapat Tim AI: ${selectedAgents.join(' & ')}]\n\nHalo Kreator! Berikut adalah hasil rangkuman diskusi tim kami untuk membantu Anda:\n\n`;
+          
+          if (selectedAgents.includes('Team Brief')) {
+            reply += `- 📄 **[Team Brief]**: "Pastikan semua deliverables wajib dari brand diperiksa kembali. Jangan sampai ada instruksi video yang terlewat saat syuting."\n`;
           }
-          return s;
-        }));
+          if (selectedAgents.includes('Team Finansial')) {
+            reply += `- 💰 **[Team Finansial]**: "Untuk anggaran proyek ini, jangan lupa sisihkan 10% untuk pajak PPh 21/23. Pastikan termin pembayaran bersih aman."\n`;
+          }
+          if (selectedAgents.includes('Team Legal')) {
+            reply += `- 🔒 **[Team Legal]**: "Periksa klausul eksklusivitas kontrak brand. Hindari eksklusivitas kategori yang terlalu lama (>3 bulan) jika budget minim."\n`;
+          }
+          if (selectedAgents.includes('Team Creative')) {
+            reply += `- 🎨 **[Team Creative]**: "Rekomendasi hook video: Tunjukkan visual hasil akhir masakan di 3 detik pertama dengan audio ASMR."\n`;
+          }
+          if (selectedAgents.includes('Team Riset')) {
+            reply += `- 🔍 **[Team Riset]**: "Gunakan hashtag populer saat ini di niche kuliner dan jadwalkan postingan pada jam 18:00 WIB."\n`;
+          }
+          if (selectedAgents.includes('Team Negosiasi')) {
+            reply += `- 🤝 **[Team Negosiasi]**: "Jika brand menawarkan rate rendah, ajukan penyesuaian deliverables secara profesional daripada langsung menolak."\n`;
+          }
+          if (selectedAgents.includes('Team Sponsor')) {
+            reply += `- 🏹 **[Team Sponsor]**: "Siapkan media kit terupdate Anda dengan social proof pencapaian ER kuat Anda untuk pitch brand ini."\n`;
+          }
+          if (selectedAgents.includes('Team Kampanye')) {
+            reply += `- 📈 **[Team Kampanye]**: "Evaluasi target audiens dan deliverables brief agar sesuai dengan performa rata-rata postingan sejenis."\n`;
+          }
+          if (selectedAgents.includes('Team PR')) {
+            reply += `- 📣 **[Team PR]**: "Jaga reputasi personal brand Anda dengan memastikan penyampaian sponsor yang natural."\n`;
+          }
+          if (selectedAgents.includes('Team Reporter')) {
+            reply += `- 📊 **[Team Reporter]**: "Kami akan merekam performa postingan ini dan menyusun data ROI untuk pelaporan kelak."\n`;
+          }
+          if (selectedAgents.includes('Team Komunitas')) {
+            reply += `- 💬 **[Team Komunitas]**: "Siapkan respons ramah dan ajakan interaksi agar penonton aktif berkomentar."\n`;
+          }
+          if (selectedAgents.includes('Team Kesehatan')) {
+            reply += `- 🌱 **[Team Kesehatan]**: "Ingat untuk beristirahat di sela-sela produksi agar kreativitas tetap optimal!"\n`;
+          }
 
-        // 2. Agent 2 Turn
-        setLoading(true); // Keep loading active
-        const thinkSteps2 = [
-          `👥 Rapat Tim: Memanggil ${cleanAgentName(meetingAgent2)}...`,
-          `🧠 ${cleanAgentName(meetingAgent2)} membaca pendapat ${cleanAgentName(meetingAgent1)}...`,
-          `✍️ ${cleanAgentName(meetingAgent2)} memberikan opini pelengkap...`
-        ];
-        startThinkingAnimation(thinkSteps2);
-
-        let reply2 = '';
-        if (!apiKey) {
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          reply2 = `[Simulasi ${cleanAgentName(meetingAgent2)}]\n\nHalo Kreator! Menambahkan poin dari rekan saya ${cleanAgentName(meetingAgent1)}, saya setuju bahwa aspek tersebut krusial. Dari sudut pandang spesialisasi saya sebagai **${meetingAgent2}**, kita harus memastikan bahwa rate card telah dioptimalkan dengan adil, dan semua tagihan invoice dipantau statusnya agar cashflow tetap aman. Apakah draf balasan atau skrip ini sudah sesuai keinginan Anda?`;
+          reply += `\nTim menyarankan untuk menghubungkan API Key SumoPod Anda di menu Setelan untuk mendapatkan analisis diskusi AI yang jauh lebih dinamis dan spesifik sesuai pesan Anda!`;
         } else {
-          // Pass the conversation with Agent 1's reply to Agent 2
-          const historyForAgent2 = [
-            ...historyForApi,
-            { sender: 'assistant', text: `${cleanAgentName(meetingAgent1)}: ${reply1}` }
-          ];
-          const res2 = await apiChatWithManager(historyForAgent2, meetingAgent2);
-          reply2 = res2.reply;
+          const res = await apiChatWithManager(historyForApi, 'Team Meeting', selectedAgents);
+          reply = res.reply;
         }
 
-        const msgAgent2 = { sender: 'assistant', senderName: cleanAgentName(meetingAgent2), text: reply2 };
-        const finalMessages = [...afterAgent1Messages, msgAgent2];
+        const msgTeamResponse = { sender: 'assistant', senderName: '👥 Rapat Tim', text: reply };
+        const finalMessages = [...updatedMessagesForState, msgTeamResponse];
 
         saveSessions(sessions.map(s => {
           if (s.id === activeSessionId) {
@@ -997,13 +1007,9 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask, refreshAllData 
                         onChange={(e) => setMeetingAgent1(e.target.value)}
                         style={{ fontSize: '10.5px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '2px 4px', borderRadius: '4px', outline: 'none' }}
                       >
-                        <option value="Brief Master">@BriefMaster</option>
-                        <option value="Financial Coach">@FinancialCoach</option>
-                        <option value="Contract Guard">@ContractGuard</option>
-                        <option value="Creative Director">@CreativeDirector</option>
-                        <option value="Diplomat Negotiator">@DiplomatNegotiator</option>
-                        <option value="Sponsor Hunter">@SponsorHunter</option>
-                        <option value="Trend Spotter">@TrendSpotter</option>
+                        {['Team Brief', 'Team Finansial', 'Team Legal', 'Team Creative', 'Team Riset', 'Team Negosiasi', 'Team Sponsor', 'Team Kampanye', 'Team PR', 'Team Komunitas', 'Team Reporter', 'Team Kesehatan'].map(a => (
+                          <option key={a} value={a}>@{a.toLowerCase().replace(/\s+/g, '_')}</option>
+                        ))}
                       </select>
                       <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>&</span>
                       <select 
@@ -1011,13 +1017,20 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask, refreshAllData 
                         onChange={(e) => setMeetingAgent2(e.target.value)}
                         style={{ fontSize: '10.5px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '2px 4px', borderRadius: '4px', outline: 'none' }}
                       >
-                        <option value="Financial Coach">@FinancialCoach</option>
-                        <option value="Brief Master">@BriefMaster</option>
-                        <option value="Contract Guard">@ContractGuard</option>
-                        <option value="Creative Director">@CreativeDirector</option>
-                        <option value="Diplomat Negotiator">@DiplomatNegotiator</option>
-                        <option value="Sponsor Hunter">@SponsorHunter</option>
-                        <option value="Trend Spotter">@TrendSpotter</option>
+                        {['Team Finansial', 'Team Brief', 'Team Legal', 'Team Creative', 'Team Riset', 'Team Negosiasi', 'Team Sponsor', 'Team Kampanye', 'Team PR', 'Team Komunitas', 'Team Reporter', 'Team Kesehatan'].map(a => (
+                          <option key={a} value={a}>@{a.toLowerCase().replace(/\s+/g, '_')}</option>
+                        ))}
+                      </select>
+                      <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>&</span>
+                      <select 
+                        value={meetingAgent3} 
+                        onChange={(e) => setMeetingAgent3(e.target.value)}
+                        style={{ fontSize: '10.5px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '2px 4px', borderRadius: '4px', outline: 'none' }}
+                      >
+                        <option value="None">- Tanpa Asisten 3 -</option>
+                        {['Team Legal', 'Team Brief', 'Team Finansial', 'Team Creative', 'Team Riset', 'Team Negosiasi', 'Team Sponsor', 'Team Kampanye', 'Team PR', 'Team Komunitas', 'Team Reporter', 'Team Kesehatan'].map(a => (
+                          <option key={a} value={a}>@{a.toLowerCase().replace(/\s+/g, '_')}</option>
+                        ))}
                       </select>
                     </div>
                   )}
@@ -1259,7 +1272,7 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask, refreshAllData 
                 }}>
                   <span style={{ fontWeight: '600', color: 'var(--accent-color)' }}>Tips Mentions:</span>
                   <span>Ketik</span>
-                  {['@ContractGuard', '@TrendSpotter', '@CampaignAnalyst'].map((m, idx) => (
+                  {['@team_legal', '@team_riset', '@team_kampanye'].map((m, idx) => (
                     <button
                       key={idx}
                       type="button"
