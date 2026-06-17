@@ -40,7 +40,7 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask }) => {
   const [activeSessionId, setActiveSessionId] = useState(null);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
-  const [thinkingStep, setThinkingStep] = useState(0);
+  const [thinkingStatus, setThinkingStatus] = useState('');
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editTitleText, setEditTitleText] = useState('');
 
@@ -64,28 +64,34 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask }) => {
 
   const [copiedMsgIdx, setCopiedMsgIdx] = useState(null);
 
-  // Thinking steps animation
-  const THINKING_STEPS = [
-    '🔍 Membaca profil kreator...',
-    '📊 Mengecek data analitik & performa...',
-    '📋 Menelusuri pipeline & alur kerja...',
-    '🧾 Memeriksa daftar invoice...',
-    '📅 Melihat agenda kalender...',
-    '🧠 Menyusun balasan...'
-  ];
+  // Dynamic thinking status helper
+  const thinkingStepsRef = useRef([]);
+  const thinkingTimerRef = useRef(null);
+
+  const startThinkingAnimation = (steps) => {
+    thinkingStepsRef.current = steps;
+    let idx = 0;
+    setThinkingStatus(steps[0]);
+    if (thinkingTimerRef.current) clearInterval(thinkingTimerRef.current);
+    thinkingTimerRef.current = setInterval(() => {
+      idx++;
+      if (idx < steps.length) {
+        setThinkingStatus(steps[idx]);
+      } else {
+        // loop on last step
+        setThinkingStatus(steps[steps.length - 1]);
+      }
+    }, 1800);
+  };
+
+  const stopThinkingAnimation = () => {
+    if (thinkingTimerRef.current) clearInterval(thinkingTimerRef.current);
+    thinkingTimerRef.current = null;
+    setThinkingStatus('');
+  };
 
   useEffect(() => {
-    if (!loading) {
-      setThinkingStep(0);
-      return;
-    }
-    const interval = setInterval(() => {
-      setThinkingStep(prev => {
-        if (prev < THINKING_STEPS.length - 1) return prev + 1;
-        return prev; // stay on last step
-      });
-    }, 1200);
-    return () => clearInterval(interval);
+    if (!loading) stopThinkingAnimation();
   }, [loading]);
 
   const handleCopyMessage = (text, idx) => {
@@ -416,6 +422,20 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask }) => {
     let displayUserMessage = text;
     
     setLoading(true);
+
+    // Build contextual thinking steps
+    const thinkSteps = [];
+    if (detectedAgentRole) {
+      thinkSteps.push(`📡 Memanggil ${detectedAgentRole}...`);
+    }
+    if (attachedFile) {
+      const isImg = attachedFile.type.startsWith('image/');
+      thinkSteps.push(isImg ? '🖼️ Menganalisis gambar...' : '📄 Membaca berkas...');
+    }
+    thinkSteps.push('🧠 Berpikir...');
+    thinkSteps.push('🔍 Mencari data relevan...');
+    thinkSteps.push('✍️ Menyusun balasan...');
+    startThinkingAnimation(thinkSteps);
     if (!textToSend) setInputText('');
 
     // Process attachment in chat
@@ -951,37 +971,12 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask }) => {
                   </div>
                 ))}
                 
-                {loading && (
+                {loading && thinkingStatus && (
                   <div className="message-bubble-wrapper assistant">
                     <span className="message-sender">Manajer Digital</span>
-                    <div className="message-bubble" style={{ opacity: 0.9, padding: '14px 16px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        {THINKING_STEPS.map((step, idx) => (
-                          <div
-                            key={idx}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px',
-                              fontSize: '12px',
-                              transition: 'all 0.4s ease',
-                              opacity: idx < thinkingStep ? 0.4 : idx === thinkingStep ? 1 : 0.15,
-                              color: idx === thinkingStep ? 'var(--accent-color)' : 'var(--text-secondary)',
-                              fontWeight: idx === thinkingStep ? '600' : '400',
-                              transform: idx <= thinkingStep ? 'translateX(0)' : 'translateX(8px)'
-                            }}
-                          >
-                            {idx < thinkingStep ? (
-                              <Check size={11} style={{ color: 'var(--success-color)', flexShrink: 0 }} />
-                            ) : idx === thinkingStep ? (
-                              <RefreshCw className="animate-spin" size={11} style={{ flexShrink: 0 }} />
-                            ) : (
-                              <span style={{ width: '11px', height: '11px', display: 'inline-block', flexShrink: 0 }} />
-                            )}
-                            <span>{step}</span>
-                          </div>
-                        ))}
-                      </div>
+                    <div className="message-bubble" style={{ display: 'flex', alignItems: 'center', gap: '10px', opacity: 0.9 }}>
+                      <RefreshCw className="animate-spin" size={13} style={{ color: 'var(--accent-color)', flexShrink: 0 }} />
+                      <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', transition: 'all 0.3s ease' }}>{thinkingStatus}</span>
                     </div>
                   </div>
                 )}
