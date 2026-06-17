@@ -1,0 +1,741 @@
+import React, { useState } from 'react';
+import { Plus, Trash, ArrowLeft, ArrowRight, Video, Calendar, Tag, AlertTriangle } from 'lucide-react';
+
+const Pipeline = ({ pipelineTasks = [], setPipelineTasks, addCalendarEvent, onCreateInvoice }) => {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
+
+  const [addNotesTab, setAddNotesTab] = useState('edit');
+  const [editNotesTab, setEditNotesTab] = useState('preview');
+  
+  const [activeDragCol, setActiveDragCol] = useState(null);
+
+  const renderMarkdown = (text) => {
+    if (!text) return <em style={{ color: 'var(--text-muted)' }}>Belum ada catatan.</em>;
+    
+    const lines = text.split('\n');
+    
+    const parseInline = (str) => {
+      const boldRegex = /\*\*([\s\S]*?)\*\*/g;
+      const parts = [];
+      let lastIndex = 0;
+      let match;
+      
+      const keywordRegex = /\b(brief|kampanye|campaign|sponsor|rate[ -]?card|rates|tarif|budget|anggaran|invoice|deadline|tenggat|revisi|kontrak|eksklusivitas|exclusivity|denda|pembayaran|negosiasi|nego|draf|draft|jadwal|agenda|kolaborasi|collaboration|agreement|brand)(nya|an|kan|i|mu|ku)?\b/gi;
+      
+      const highlight = (txt, prefix) => {
+        if (!keywordRegex.test(txt)) return [txt];
+        keywordRegex.lastIndex = 0;
+        const subParts = [];
+        let subLastIdx = 0;
+        let subMatch;
+        while ((subMatch = keywordRegex.exec(txt)) !== null) {
+          const before = txt.substring(subLastIdx, subMatch.index);
+          if (before) subParts.push(before);
+          subParts.push(
+            <span key={`${prefix}-${subMatch.index}`} className="highlight-keyword">
+              {subMatch[0]}
+            </span>
+          );
+          subLastIdx = keywordRegex.lastIndex;
+        }
+        const after = txt.substring(subLastIdx);
+        if (after) subParts.push(after);
+        return subParts;
+      };
+
+      while ((match = boldRegex.exec(str)) !== null) {
+        const textBefore = str.substring(lastIndex, match.index);
+        if (textBefore) parts.push(...highlight(textBefore, `tb-${match.index}`));
+        parts.push(
+          <strong key={match.index} style={{ color: 'var(--accent-color)', fontWeight: '600' }}>
+            {highlight(match[1], `str-${match.index}`)}
+          </strong>
+        );
+        lastIndex = boldRegex.lastIndex;
+      }
+      
+      const remaining = str.substring(lastIndex);
+      if (remaining) parts.push(...highlight(remaining, 'rem'));
+      
+      return parts;
+    };
+
+    return lines.map((line, idx) => {
+      const trimmed = line.trim();
+      
+      if (trimmed.startsWith('### ')) {
+        return <h4 key={idx} style={{ fontSize: '14px', fontWeight: '600', margin: '12px 0 6px 0', color: 'var(--text-primary)', fontFamily: 'sans-serif' }}>{parseInline(trimmed.substring(4))}</h4>;
+      }
+      if (trimmed.startsWith('## ')) {
+        return <h3 key={idx} style={{ fontSize: '15px', fontWeight: '600', margin: '14px 0 8px 0', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '4px', fontFamily: 'sans-serif' }}>{parseInline(trimmed.substring(3))}</h3>;
+      }
+      if (trimmed.startsWith('# ')) {
+        return <h2 key={idx} style={{ fontSize: '16px', fontWeight: '700', margin: '16px 0 10px 0', color: 'var(--text-primary)', borderBottom: '2px solid var(--border-color)', paddingBottom: '6px', fontFamily: 'sans-serif' }}>{parseInline(trimmed.substring(2))}</h2>;
+      }
+      
+      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+        return (
+          <div key={idx} style={{ display: 'flex', gap: '8px', margin: '4px 0 4px 12px', alignItems: 'flex-start', fontFamily: 'sans-serif' }}>
+            <span style={{ color: 'var(--accent-color)' }}>•</span>
+            <span style={{ fontSize: '13.5px', lineHeight: '1.6' }}>{parseInline(trimmed.substring(2))}</span>
+          </div>
+        );
+      }
+      
+      const numMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
+      if (numMatch) {
+        return (
+          <div key={idx} style={{ display: 'flex', gap: '8px', margin: '4px 0 4px 12px', alignItems: 'flex-start', fontFamily: 'sans-serif' }}>
+            <span style={{ color: 'var(--accent-color)', fontWeight: '500' }}>{numMatch[1]}.</span>
+            <span style={{ fontSize: '13.5px', lineHeight: '1.6' }}>{parseInline(numMatch[2])}</span>
+          </div>
+        );
+      }
+      
+      if (trimmed === '') {
+        return <div key={idx} style={{ height: '8px' }} />;
+      }
+      
+      return (
+        <p key={idx} style={{ fontSize: '13.5px', lineHeight: '1.6', margin: '4px 0', fontFamily: 'sans-serif' }}>
+          {parseInline(line)}
+        </p>
+      );
+    });
+  };
+
+  const [newTask, setNewTask] = useState({
+    title: '',
+    brand: '',
+    platform: 'Instagram',
+    dueDate: '',
+    deliverables: '',
+    notes: ''
+  });
+
+  const columns = [
+    { id: 'calendar', label: 'Jadwal & Agenda', color: '#06B6D4' },
+    { id: 'idea', label: 'Ideasi', color: '#6b7280' },
+    { id: 'script', label: 'Naskah', color: '#8b5cf6' },
+    { id: 'production', label: 'Produksi', color: '#f59e0b' },
+    { id: 'editing', label: 'Editing', color: '#3b82f6' },
+    { id: 'review', label: 'Review Brand', color: '#ec4899' },
+    { id: 'published', label: 'Tayang (Published)', color: '#10b981' }
+  ];
+
+  const getDeadlineClass = (dueDate) => {
+    if (!dueDate) return '';
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(dueDate + 'T00:00:00');
+    const diffMs = due - today;
+    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays < 0) return 'deadline-overdue';
+    if (diffDays === 0) return 'deadline-today';
+    if (diffDays <= 3) return 'deadline-warning';
+    return '';
+  };
+
+  const getDeadlineLabel = (dueDate) => {
+    if (!dueDate) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(dueDate + 'T00:00:00');
+    const diffMs = due - today;
+    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays < 0) return `Terlambat ${Math.abs(diffDays)} hari`;
+    if (diffDays === 0) return 'HARI INI!';
+    if (diffDays === 1) return 'Besok!';
+    if (diffDays <= 3) return `${diffDays} hari lagi`;
+    return null;
+  };
+
+  const handleDragStart = (e, taskId) => {
+    e.dataTransfer.setData('text/plain', taskId);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e, newStatus) => {
+    e.preventDefault();
+    const taskId = e.dataTransfer.getData('text/plain');
+    updateTaskStatus(taskId, newStatus);
+    setActiveDragCol(null);
+  };
+
+  const updateTaskStatus = (taskId, newStatus) => {
+    const updated = pipelineTasks.map(task => {
+      if (task.id === taskId) {
+        // If task is moved to published, maybe we want to log or notify.
+        return { ...task, status: newStatus };
+      }
+      return task;
+    });
+    setPipelineTasks(updated);
+  };
+
+  const moveLeft = (taskId, currentStatus) => {
+    const currentIndex = columns.findIndex(col => col.id === currentStatus);
+    if (currentIndex > 0) {
+      updateTaskStatus(taskId, columns[currentIndex - 1].id);
+    }
+  };
+
+  const moveRight = (taskId, currentStatus) => {
+    const currentIndex = columns.findIndex(col => col.id === currentStatus);
+    if (currentIndex < columns.length - 1) {
+      updateTaskStatus(taskId, columns[currentIndex + 1].id);
+    }
+  };
+
+  const handleDelete = (taskId) => {
+    if (window.confirm('Apakah Anda yakin ingin menghapus tugas konten ini?')) {
+      setPipelineTasks(pipelineTasks.filter(t => t.id !== taskId));
+    }
+  };
+
+  const handleEditSubmit = (e) => {
+    e.preventDefault();
+    if (!editingTask.title || !editingTask.brand) return;
+
+    const updated = pipelineTasks.map(task => {
+      if (task.id === editingTask.id) {
+        return editingTask;
+      }
+      return task;
+    });
+
+    setPipelineTasks(updated);
+    setEditingTask(null);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!newTask.title || !newTask.brand) return;
+
+    const createdTask = {
+      ...newTask,
+      id: `task-${Date.now()}`,
+      status: 'idea'
+    };
+
+    setPipelineTasks([createdTask, ...pipelineTasks]);
+
+    // Also add to calendar if due date is provided
+    if (newTask.dueDate) {
+      addCalendarEvent({
+        id: `event-task-${Date.now()}`,
+        title: `Tenggat: ${newTask.title}`,
+        start: newTask.dueDate,
+        type: 'deadline',
+        brand: newTask.brand
+      });
+    }
+
+    // Reset form
+    setNewTask({
+      title: '',
+      brand: '',
+      platform: 'Instagram',
+      dueDate: '',
+      deliverables: '',
+      notes: ''
+    });
+    setShowAddForm(false);
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minWidth: 0, width: '100%' }}>
+      <div className="content-header" style={{ maxWidth: '1846px' }}>
+        <div className="content-title">
+          <h1>Alur Kerja Konten (Kanban)</h1>
+          <p>Kelola tahapan produksi konten Anda dari ide hingga dipublikasikan.</p>
+        </div>
+        <div className="header-actions">
+          <button className="btn btn-primary" onClick={() => setShowAddForm(true)}>
+            <Plus size={16} /> Tambah Konten
+          </button>
+        </div>
+      </div>
+
+      {/* Add Task Modal */}
+      {showAddForm && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div className="card" style={{ width: '100%', maxWidth: '850px', backgroundColor: 'var(--bg-secondary)' }}>
+            <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>Buat Tugas Konten Baru</h2>
+            <form onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label>Nama/Judul Konten *</label>
+                <input 
+                  type="text" 
+                  className="form-control" 
+                  placeholder="Misal: Review Skincare Edisi Cushion"
+                  value={newTask.title} 
+                  onChange={e => setNewTask({ ...newTask, title: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Nama Brand / Sponsor *</label>
+                <input 
+                  type="text" 
+                  className="form-control" 
+                  placeholder="Misal: Wardah Beauty"
+                  value={newTask.brand} 
+                  onChange={e => setNewTask({ ...newTask, brand: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Platform</label>
+                  <select 
+                    className="form-control"
+                    value={newTask.platform} 
+                    onChange={e => setNewTask({ ...newTask, platform: e.target.value })}
+                  >
+                    <option value="Instagram">Instagram</option>
+                    <option value="TikTok">TikTok</option>
+                    <option value="YouTube">YouTube</option>
+                    <option value="Twitter">Twitter / X</option>
+                    <option value="Lainnya">Lainnya</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Tenggat Waktu (Deadline)</label>
+                  <input 
+                    type="date" 
+                    className="form-control" 
+                    value={newTask.dueDate} 
+                    onChange={e => setNewTask({ ...newTask, dueDate: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Deliverables (Detail Pekerjaan)</label>
+                <input 
+                  type="text" 
+                  className="form-control" 
+                  placeholder="Misal: 1x Reels Video, 3x Stories"
+                  value={newTask.deliverables} 
+                  onChange={e => setNewTask({ ...newTask, deliverables: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label style={{ margin: 0 }}>Catatan / Do's & Don'ts</label>
+                  <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-primary)', padding: '2px', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
+                    <button
+                      type="button"
+                      onClick={() => setAddNotesTab('preview')}
+                      style={{
+                        padding: '4px 10px',
+                        fontSize: '11px',
+                        borderRadius: '3px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        background: addNotesTab === 'preview' ? 'var(--accent-light)' : 'transparent',
+                        color: addNotesTab === 'preview' ? 'var(--accent-color)' : 'var(--text-secondary)',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      Pratinjau Rapi
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAddNotesTab('edit')}
+                      style={{
+                        padding: '4px 10px',
+                        fontSize: '11px',
+                        borderRadius: '3px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        background: addNotesTab === 'edit' ? 'var(--accent-light)' : 'transparent',
+                        color: addNotesTab === 'edit' ? 'var(--accent-color)' : 'var(--text-secondary)',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      Sunting Teks
+                    </button>
+                  </div>
+                </div>
+
+                {addNotesTab === 'preview' ? (
+                  <div style={{
+                    minHeight: '280px',
+                    maxHeight: '380px',
+                    overflowY: 'auto',
+                    backgroundColor: 'var(--bg-primary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--border-radius-md)',
+                    padding: '14px 18px',
+                    color: 'var(--text-primary)'
+                  }}>
+                    {renderMarkdown(newTask.notes)}
+                  </div>
+                ) : (
+                  <textarea 
+                    className="form-control" 
+                    placeholder="Instruksi khusus atau catatan tambahan dari brand..."
+                    value={newTask.notes} 
+                    onChange={e => setNewTask({ ...newTask, notes: e.target.value })}
+                    style={{
+                      minHeight: '280px',
+                      fontSize: '13.5px',
+                      lineHeight: '1.6',
+                      fontFamily: 'var(--font-sans)',
+                      padding: '12px 14px'
+                    }}
+                  />
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowAddForm(false)}>
+                  Batal
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Simpan Tugas
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Task Modal */}
+      {editingTask && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div className="card" style={{ width: '100%', maxWidth: '850px', backgroundColor: 'var(--bg-secondary)' }}>
+            <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>Ubah Tugas Konten</h2>
+            <form onSubmit={handleEditSubmit}>
+              <div className="form-group">
+                <label>Nama/Judul Konten *</label>
+                <input 
+                  type="text" 
+                  className="form-control" 
+                  value={editingTask.title} 
+                  onChange={e => setEditingTask({ ...editingTask, title: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Nama Brand / Sponsor *</label>
+                <input 
+                  type="text" 
+                  className="form-control" 
+                  value={editingTask.brand} 
+                  onChange={e => setEditingTask({ ...editingTask, brand: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Platform</label>
+                  <select 
+                    className="form-control"
+                    value={editingTask.platform} 
+                    onChange={e => setEditingTask({ ...editingTask, platform: e.target.value })}
+                  >
+                    <option value="Instagram">Instagram</option>
+                    <option value="TikTok">TikTok</option>
+                    <option value="YouTube">YouTube</option>
+                    <option value="Twitter">Twitter / X</option>
+                    <option value="Lainnya">Lainnya</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Tenggat Waktu (Deadline)</label>
+                  <input 
+                    type="date" 
+                    className="form-control" 
+                    value={editingTask.dueDate || ''} 
+                    onChange={e => setEditingTask({ ...editingTask, dueDate: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Deliverables (Detail Pekerjaan)</label>
+                <input 
+                  type="text" 
+                  className="form-control" 
+                  value={editingTask.deliverables || ''} 
+                  onChange={e => setEditingTask({ ...editingTask, deliverables: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label style={{ margin: 0 }}>Catatan / Do's & Don'ts</label>
+                  <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-primary)', padding: '2px', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
+                    <button
+                      type="button"
+                      onClick={() => setEditNotesTab('preview')}
+                      style={{
+                        padding: '4px 10px',
+                        fontSize: '11px',
+                        borderRadius: '3px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        background: editNotesTab === 'preview' ? 'var(--accent-light)' : 'transparent',
+                        color: editNotesTab === 'preview' ? 'var(--accent-color)' : 'var(--text-secondary)',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      Pratinjau Rapi
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditNotesTab('edit')}
+                      style={{
+                        padding: '4px 10px',
+                        fontSize: '11px',
+                        borderRadius: '3px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        background: editNotesTab === 'edit' ? 'var(--accent-light)' : 'transparent',
+                        color: editNotesTab === 'edit' ? 'var(--accent-color)' : 'var(--text-secondary)',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      Sunting Teks
+                    </button>
+                  </div>
+                </div>
+
+                {editNotesTab === 'preview' ? (
+                  <div style={{
+                    minHeight: '280px',
+                    maxHeight: '380px',
+                    overflowY: 'auto',
+                    backgroundColor: 'var(--bg-primary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--border-radius-md)',
+                    padding: '14px 18px',
+                    color: 'var(--text-primary)'
+                  }}>
+                    {renderMarkdown(editingTask.notes)}
+                  </div>
+                ) : (
+                  <textarea 
+                    className="form-control" 
+                    value={editingTask.notes || ''} 
+                    onChange={e => setEditingTask({ ...editingTask, notes: e.target.value })}
+                    style={{
+                      minHeight: '280px',
+                      fontSize: '13.5px',
+                      lineHeight: '1.6',
+                      fontFamily: 'var(--font-sans)',
+                      padding: '12px 14px'
+                    }}
+                  />
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px' }}>
+                {editingTask.status === 'published' && onCreateInvoice && (
+                  <button 
+                    type="button" 
+                    className="btn btn-primary"
+                    style={{ marginRight: 'auto' }}
+                    onClick={() => {
+                      onCreateInvoice(editingTask);
+                      setEditingTask(null);
+                    }}
+                  >
+                    Buat Invoice
+                  </button>
+                )}
+                <button type="button" className="btn btn-secondary" onClick={() => setEditingTask(null)}>
+                  Batal
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Simpan Perubahan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Kanban Board */}
+      <div className="pipeline-container">
+        {columns.map(col => {
+          const tasksInCol = pipelineTasks.filter(t => t.status === col.id);
+          const isDragOver = activeDragCol === col.id;
+          return (
+            <div 
+              key={col.id} 
+              className={`pipeline-column ${isDragOver ? 'drag-over' : ''}`}
+              onDragOver={handleDragOver}
+              onDragEnter={(e) => { e.preventDefault(); setActiveDragCol(col.id); }}
+              onDragLeave={() => setActiveDragCol(null)}
+              onDrop={(e) => handleDrop(e, col.id)}
+            >
+              <div className="column-header">
+                <div className="column-title">
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: col.color }} />
+                  {col.label}
+                </div>
+                <div className="column-count">{tasksInCol.length}</div>
+              </div>
+
+              <div className="column-cards">
+                {tasksInCol.map(task => {
+                  const dlClass = getDeadlineClass(task.dueDate);
+                  const dlLabel = getDeadlineLabel(task.dueDate);
+                  return (
+                  <div 
+                    key={task.id} 
+                    className={`pipeline-card ${dlClass} ${task.status === 'published' ? 'status-published' : ''}`}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, task.id)}
+                    onDoubleClick={() => { setEditingTask({...task}); setEditNotesTab('preview'); }}
+                    title="Klik ganda untuk mengedit"
+                  >
+                    <div className="card-project-header">
+                      <span className="card-project-brand">{task.brand}</span>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <button 
+                          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', padding: 0 }}
+                          onClick={() => handleDelete(task.id)}
+                          title="Hapus Tugas"
+                        >
+                          <Trash size={12} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="card-project-title">{task.title}</div>
+                    
+                    {task.deliverables && (
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                        <Video size={10} /> {task.deliverables}
+                      </div>
+                    )}
+
+                    {task.dueDate && (
+                      <div className="card-due-date" style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Calendar size={10} /> Tenggat: {task.dueDate}
+                        {dlLabel && (
+                          <span style={{
+                            marginLeft: '4px',
+                            fontSize: '9.5px',
+                            fontWeight: '700',
+                            padding: '1px 5px',
+                            borderRadius: '3px',
+                            background: dlClass === 'deadline-warning' ? 'rgba(245,158,11,0.2)' :
+                                         dlClass === 'deadline-today' ? 'rgba(239,68,68,0.2)' :
+                                         dlClass === 'deadline-overdue' ? 'rgba(185,28,28,0.25)' : 'transparent',
+                            color: dlClass === 'deadline-warning' ? '#f59e0b' :
+                                   dlClass === 'deadline-today' ? '#ef4444' :
+                                   dlClass === 'deadline-overdue' ? '#fca5a5' : 'inherit',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '3px'
+                          }}>
+                            {(dlClass === 'deadline-today' || dlClass === 'deadline-overdue') && <AlertTriangle size={9} />}
+                            {dlLabel}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="card-project-meta">
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><Tag size={10} /> {task.platform}</span>
+                    </div>
+
+                    <div className="card-actions">
+                      <button onClick={() => moveLeft(task.id, task.status)} disabled={col.id === 'calendar'}>
+                        <ArrowLeft size={10} />
+                      </button>
+                      <button onClick={() => moveRight(task.id, task.status)} disabled={col.id === 'published'}>
+                        <ArrowRight size={10} />
+                      </button>
+                    </div>
+
+                    {task.status === 'published' && onCreateInvoice && (
+                      <button 
+                        className="btn btn-primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCreateInvoice(task);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '6px 10px',
+                          fontSize: '11px',
+                          marginTop: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        Buat Invoice
+                      </button>
+                    )}
+                  </div>
+                  );
+                })}
+                {tasksInCol.length === 0 && (
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '24px 8px', 
+                    color: 'var(--text-muted)', 
+                    border: '1px dashed var(--border-color)',
+                    borderRadius: 'var(--border-radius-md)',
+                    fontSize: '11px'
+                  }}>
+                    Seret tugas ke sini
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+export default Pipeline;
