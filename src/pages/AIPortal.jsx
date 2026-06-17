@@ -164,10 +164,61 @@ const AIPortal = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEvent })
   const [chatLoading, setChatLoading] = useState(false);
   const chatEndRef = useRef(null);
 
+  // Team Meeting States
+  const [isMeeting, setIsMeeting] = useState(false);
+  const [teamChatHistory, setTeamChatHistory] = useState([]);
+
   // Auto-scroll chat window
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatHistories, activeAgent, workspaceTab]);
+  }, [chatHistories, activeAgent, workspaceTab, teamChatHistory]);
+
+  const getAgentPosition = (index, total, meeting) => {
+    if (meeting) {
+      // Circle around conference table (x: 50, y: 50)
+      const angle = (index / total) * Math.PI * 2;
+      return {
+        left: `${50 + Math.cos(angle) * 18}%`,
+        top: `${50 + Math.sin(angle) * 22}%`
+      };
+    } else {
+      // 12 Desks layout
+      const positions = [
+        {x: 10, y: 15}, {x: 36, y: 15}, {x: 63, y: 15}, {x: 90, y: 15},
+        {x: 10, y: 40}, {x: 90, y: 40},
+        {x: 10, y: 65}, {x: 90, y: 65},
+        {x: 10, y: 90}, {x: 36, y: 90}, {x: 63, y: 90}, {x: 90, y: 90}
+      ];
+      return { left: `${positions[index].x}%`, top: `${positions[index].y}%` };
+    }
+  };
+
+  const handleStartMeeting = () => {
+    setIsMeeting(true);
+    setActiveAgent(null); // Close individual agent sidebar
+    if (teamChatHistory.length === 0) {
+      setTeamChatHistory([{ sender: 'team', text: 'Rapat Tim dimulai! Tanyakan masalah apa saja, dan 2-3 agen relevan akan berdiskusi memberikan 1 jawaban final untuk Anda.' }]);
+    }
+  };
+
+  const handleSendTeamMessage = async (e) => {
+    e.preventDefault();
+    if (!chatInput.trim() || chatLoading) return;
+    const msg = chatInput.trim();
+    setChatInput('');
+    setTeamChatHistory(prev => [...prev, { sender: 'user', text: msg }]);
+    setChatLoading(true);
+
+    try {
+      // Prompt khusus untuk Rapat Tim (meminta gabungan pemikiran 2-3 agent)
+      const res = await apiChatWithManager(msg, apiKey, creatorProfile?.name || 'Kreator', 'Team Meeting (Semua Agen)');
+      setTeamChatHistory(prev => [...prev, { sender: 'team', text: res.reply }]);
+    } catch (err) {
+      setTeamChatHistory(prev => [...prev, { sender: 'team', text: "Maaf, diskusi tim terganggu (koneksi/API error)." }]);
+    } finally {
+      setChatLoading(false);
+    }
+  };
 
   const handleOpenAgent = (agent) => {
     setActiveAgent(agent);
@@ -1208,272 +1259,199 @@ const AIPortal = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEvent })
   };
 
   return (
-    <div>
-      {/* Page Header */}
-      <div className="content-header">
-        <div className="content-title">
-          <h1>Pusat Agen AI</h1>
-          <p>Kelola bisnis konten Anda dengan mengaktifkan tim yang terdiri dari 12 Agen AI spesialis berkinerja tinggi.</p>
-        </div>
-      </div>
+    <div className="hq-container">
+      {/* 3D Isometric View */}
+      <div className="isometric-room">
+        <div className="office-floor"></div>
+        <div className="office-wall-left"></div>
+        <div className="office-wall-top"></div>
+        
+        {/* Central Conference Table */}
+        <div className="conference-table-3d"></div>
 
-      {/* Grid of 12 AI Agents */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-        gap: '20px',
-        marginTop: '8px'
-      }}>
-        {AGENTS.map((agent) => {
+        {/* Render Agents and Desks */}
+        {AGENTS.map((agent, idx) => {
+          const pos = getAgentPosition(idx, AGENTS.length, isMeeting);
           const AgentIcon = agent.icon;
           return (
-            <div 
-              key={agent.id}
-              className="card cursor-pointer"
-              style={{
-                padding: '20px',
-                border: '1px solid var(--border-color)',
-                transition: 'transform 0.2s ease, border-color 0.2s ease',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                height: '180px'
-              }}
-              onClick={() => handleOpenAgent(agent)}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = agent.color;
-                e.currentTarget.style.transform = 'translateY(-2px)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--border-color)';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
-            >
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <div style={{
-                    width: '38px',
-                    height: '38px',
-                    borderRadius: '8px',
-                    background: `${agent.color}15`,
-                    color: agent.color,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <AgentIcon size={20} />
-                  </div>
-                  <span style={{ fontSize: '10px', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.03)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
-                    Ready
-                  </span>
-                </div>
-                <h3 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '4px', color: 'var(--text-primary)' }}>{agent.name}</h3>
-                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{agent.description}</p>
-              </div>
+            <React.Fragment key={agent.id}>
+              {/* Desk stays at original position */}
+              <div 
+                className="desk-3d" 
+                style={getAgentPosition(idx, AGENTS.length, false)}
+              ></div>
               
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: agent.color, fontWeight: '500', marginTop: '8px' }}>
-                <Play size={10} />
-                <span>Buka Workspace</span>
+              {/* Agent moves */}
+              <div 
+                className="agent-3d" 
+                style={pos}
+                onClick={() => {
+                  if (isMeeting) setIsMeeting(false);
+                  handleOpenAgent(agent);
+                }}
+              >
+                <div className="agent-avatar" style={{ backgroundColor: agent.color }}>
+                  <AgentIcon size={20} />
+                </div>
+                <div className="agent-nametag">
+                  <div className="dot" style={{ backgroundColor: agent.color }}></div>
+                  {agent.name}
+                </div>
               </div>
-            </div>
+            </React.Fragment>
           );
         })}
       </div>
 
-      {/* Backdrop overlay */}
-      {activeAgent && (
-        <div 
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            background: 'rgba(0,0,0,0.6)',
-            zIndex: 999,
-            backdropFilter: 'blur(2px)'
-          }}
-          onClick={() => setActiveAgent(null)}
-        />
-      )}
-
-      {/* Slide-over Panel (Drawer Workspace) */}
-      {activeAgent && (
-        <div 
-          style={{
-            position: 'fixed',
-            top: 0,
-            right: 0,
-            width: '100%',
-            maxWidth: '500px',
-            height: '100vh',
-            background: 'var(--bg-secondary)',
-            borderLeft: '1px solid var(--border-color)',
-            zIndex: 1000,
-            display: 'flex',
-            flexDirection: 'column',
-            boxShadow: '-10px 0 30px rgba(0,0,0,0.5)',
-            animation: 'slideIn 0.3s ease-out'
-          }}
+      {/* Meeting Controls (Bottom Center) */}
+      <div className="meeting-control">
+        <button 
+          type="button"
+          className={`meeting-btn ${!isMeeting ? 'active' : ''}`} 
+          onClick={() => setIsMeeting(false)}
         >
-          {/* Drawer Header */}
-          <div style={{
-            padding: '20px',
-            borderBottom: '1px solid var(--border-color)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-              <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '6px',
-                background: `${activeAgent.color}15`,
-                color: activeAgent.color,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                {React.createElement(activeAgent.icon, { size: 18 })}
-              </div>
+          <div className="meeting-dot"></div> Mode Bekerja
+        </button>
+        <button 
+          type="button"
+          className={`meeting-btn ${isMeeting ? 'active' : ''}`} 
+          onClick={handleStartMeeting}
+        >
+          <div className="meeting-dot"></div> Rapat Tim
+        </button>
+      </div>
+
+      {/* Right Sidebar (Headquarters / Active Agent / Meeting) */}
+      {(activeAgent || isMeeting) && (
+        <div className="hq-sidebar">
+          <div className="hq-sidebar-header">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)' }}>{activeAgent.name}</h3>
-                <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{activeAgent.role}</span>
+                <div className="hq-sidebar-title">
+                  {isMeeting ? 'RUANG RAPAT TIM' : 'TERMINAL AGEN'}
+                </div>
+                <div className="hq-sidebar-subtitle">
+                  {isMeeting ? 'Diskusi Kolektif 2-3 Agen' : activeAgent.name}
+                </div>
               </div>
-            </div>
-            <button 
-              onClick={() => setActiveAgent(null)}
-              style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', padding: '4px' }}
-            >
-              <X size={18} />
-            </button>
-          </div>
-
-          {/* Tab Selection */}
-          {activeAgent.quickActionTab && (
-            <div style={{
-              display: 'flex',
-              padding: '12px 20px',
-              borderBottom: '1px solid var(--border-color)',
-              gap: '12px',
-              background: 'rgba(255,255,255,0.01)'
-            }}>
               <button 
-                className={`btn btn-sm ${workspaceTab === 'quick' ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ flex: 1 }}
-                onClick={() => setWorkspaceTab('quick')}
+                onClick={() => {
+                  setActiveAgent(null);
+                  setIsMeeting(false);
+                }} 
+                style={{ background: 'transparent', border: 'none', color: '#a0aec0', cursor: 'pointer' }}
               >
-                Aksi Cepat
-              </button>
-              <button 
-                className={`btn btn-sm ${workspaceTab === 'chat' ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ flex: 1 }}
-                onClick={() => setWorkspaceTab('chat')}
-              >
-                Ruang Obrolan
+                <X size={18} />
               </button>
             </div>
-          )}
-
-          {/* Drawer Body */}
-          <div style={{ flexGrow: 1, overflowY: 'auto', padding: '20px' }}>
-            {workspaceTab === 'quick' ? (
-              /* QUICK ACTION FORM */
-              <form onSubmit={handleRunQuickAction}>
-                {renderAgentFormFields()}
-                
-                {actionError && (
-                  <div style={{
-                    padding: '10px 12px',
-                    background: 'rgba(239, 68, 68, 0.1)',
-                    border: '1px solid rgba(239, 68, 68, 0.2)',
-                    borderRadius: 'var(--border-radius-sm)',
-                    color: '#EF4444',
-                    fontSize: '12px',
-                    marginBottom: '16px'
-                  }}>
-                    {actionError}
-                  </div>
-                )}
-
+            
+            {!isMeeting && activeAgent.quickActionTab && (
+              <div style={{ display: 'flex', gap: '4px', marginTop: '15px' }}>
                 <button 
-                  type="submit" 
-                  className="btn btn-primary" 
-                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                  disabled={actionLoading}
+                  type="button"
+                  style={{
+                    flex: 1, padding: '6px', fontSize: '11px', borderRadius: '4px', border: 'none', cursor: 'pointer',
+                    background: workspaceTab === 'quick' ? '#3182ce' : 'rgba(255,255,255,0.05)',
+                    color: workspaceTab === 'quick' ? '#fff' : '#a0aec0'
+                  }}
+                  onClick={() => setWorkspaceTab('quick')}
                 >
-                  {actionLoading ? <RefreshCw className="animate-spin" size={16} /> : <Play size={14} />}
-                  <span>{actionLoading ? 'Menjalankan Agen...' : 'Jalankan Agen AI'}</span>
+                  Playbook
                 </button>
-
-                {renderActionResultBox()}
-              </form>
-            ) : (
-              /* CHAT ROOM */
+                <button 
+                  type="button"
+                  style={{
+                    flex: 1, padding: '6px', fontSize: '11px', borderRadius: '4px', border: 'none', cursor: 'pointer',
+                    background: workspaceTab === 'chat' ? '#3182ce' : 'rgba(255,255,255,0.05)',
+                    color: workspaceTab === 'chat' ? '#fff' : '#a0aec0'
+                  }}
+                  onClick={() => setWorkspaceTab('chat')}
+                >
+                  Chat Ops
+                </button>
+              </div>
+            )}
+          </div>
+          
+          <div className="hq-sidebar-content">
+            {/* Rapat Tim Chat */}
+            {isMeeting ? (
               <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                {/* Chat Log */}
-                <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
-                  {(chatHistories[activeAgent.id] || []).map((msg, idx) => (
-                    <div 
-                      key={idx} 
-                      className={`chat-msg ${msg.sender}`}
-                      style={{
-                        alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
-                        background: msg.sender === 'user' ? 'var(--accent-color)' : 'rgba(255,255,255,0.03)',
-                        color: msg.sender === 'user' ? '#fff' : 'var(--text-primary)',
-                        padding: '10px 14px',
-                        borderRadius: '12px',
-                        maxWidth: '85%',
-                        fontSize: '12.5px',
-                        lineHeight: '1.4',
-                        whiteSpace: 'pre-wrap'
-                      }}
-                    >
+                <div style={{ flexGrow: 1, overflowY: 'auto', marginBottom: '15px', display: 'flex', flexDirection: 'column' }}>
+                  {teamChatHistory.map((msg, idx) => (
+                    <div key={idx} className={`hq-chat-msg ${msg.sender}`}>
                       {msg.text}
                     </div>
                   ))}
                   {chatLoading && (
-                    <div style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.02)', padding: '6px 12px', borderRadius: '8px' }}>
-                      <RefreshCw className="animate-spin" size={12} />
-                      <span>Agen sedang menulis...</span>
+                    <div style={{ fontSize: '11px', color: '#a0aec0', padding: '10px' }}>
+                      Agen sedang berdiskusi merumuskan jawaban...
                     </div>
                   )}
                   <div ref={chatEndRef} />
                 </div>
-
-                {/* Chat Input Bar */}
-                <form onSubmit={handleSendChatMessage} style={{ display: 'flex', gap: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+                <form onSubmit={handleSendTeamMessage} style={{ display: 'flex', gap: '8px' }}>
                   <input
                     type="text"
-                    className="form-control"
-                    placeholder={`Tulis instruksi untuk ${activeAgent.name}...`}
                     value={chatInput}
-                    onChange={e => setChatInput(e.target.value)}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder="Apa yang ingin dibahas tim?"
                     disabled={chatLoading}
+                    style={{ flexGrow: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid #4a5568', borderRadius: '6px', padding: '10px', color: '#e2e8f0', fontSize: '12px' }}
                   />
-                  <button 
-                    type="submit" 
-                    className="btn btn-primary" 
-                    style={{ padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    disabled={chatLoading}
-                  >
+                  <button type="submit" disabled={chatLoading} style={{ background: '#3182ce', border: 'none', borderRadius: '6px', padding: '0 15px', color: '#fff', cursor: 'pointer' }}>
                     <Send size={16} />
                   </button>
                 </form>
               </div>
+            ) : workspaceTab === 'chat' ? (
+              /* Agent Chat Room */
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <div style={{ flexGrow: 1, overflowY: 'auto', marginBottom: '15px', display: 'flex', flexDirection: 'column' }}>
+                  {(chatHistories[activeAgent.id] || []).map((msg, idx) => (
+                    <div key={idx} className={`hq-chat-msg ${msg.sender}`}>
+                      {msg.text}
+                    </div>
+                  ))}
+                  {chatLoading && (
+                    <div style={{ fontSize: '11px', color: '#a0aec0', padding: '10px' }}>
+                      {activeAgent.name} mengetik...
+                    </div>
+                  )}
+                  <div ref={chatEndRef} />
+                </div>
+                <form onSubmit={handleSendChatMessage} style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder={`Instruksi untuk ${activeAgent.name}...`}
+                    disabled={chatLoading}
+                    style={{ flexGrow: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid #4a5568', borderRadius: '6px', padding: '10px', color: '#e2e8f0', fontSize: '12px' }}
+                  />
+                  <button type="submit" disabled={chatLoading} style={{ background: '#3182ce', border: 'none', borderRadius: '6px', padding: '0 15px', color: '#fff', cursor: 'pointer' }}>
+                    <Send size={16} />
+                  </button>
+                </form>
+              </div>
+            ) : (
+              /* Playbook Form */
+              <form onSubmit={handleActionSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                {renderActionFields(activeAgent.id)}
+                <button 
+                  type="submit" 
+                  disabled={actionLoading}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: activeAgent.color, border: 'none', borderRadius: '6px', padding: '12px', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  {actionLoading ? <RefreshCw className="animate-spin" size={16} /> : <Play size={14} />}
+                  <span>{actionLoading ? 'Menjalankan...' : 'Jalankan Playbook'}</span>
+                </button>
+                {renderActionResultBox()}
+              </form>
             )}
           </div>
         </div>
       )}
-
-      {/* Slide-in Keyframe Animation Style */}
-      <style>{`
-        @keyframes slideIn {
-          from { transform: translateX(100%); }
-          to { transform: translateX(0); }
-        }
-      `}</style>
     </div>
   );
 };
