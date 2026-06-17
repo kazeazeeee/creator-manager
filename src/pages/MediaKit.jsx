@@ -31,6 +31,41 @@ const MediaKit = ({ profile, setProfile }) => {
   };
 
   const [editing, setEditing] = useState(false);
+  const [pdfTheme, setPdfTheme] = useState('light'); // 'light', 'dark', 'sunset'
+
+  const themeStyles = {
+    light: {
+      bg: '#ffffff',
+      text: '#1f2937',
+      textSec: '#6b7280',
+      accent: '#7c3aed', // Violet
+      accentBg: '#f5f3ff',
+      border: '#e5e7eb',
+      cardBg: '#f9fafb',
+      title: '#4b5563'
+    },
+    dark: {
+      bg: '#1a1f29',
+      text: '#f8fafc',
+      textSec: '#94a3b8',
+      accent: '#06b6d4', // Cyan
+      accentBg: 'rgba(6, 182, 212, 0.1)',
+      border: '#355a66', // Teal border
+      cardBg: '#181a1f',
+      title: '#5c6370'
+    },
+    sunset: {
+      bg: '#fffdf9', // Soft Cream
+      text: '#27272a', // Charcoal
+      textSec: '#71717a',
+      accent: '#f43f5e', // Coral Rose
+      accentBg: '#fff1f2',
+      border: '#e7e5e4',
+      cardBg: '#fafaf9',
+      title: '#4a5568'
+    }
+  };
+
   const [formProfile, setFormProfile] = useState({
     name: '',
     handle: '',
@@ -39,6 +74,13 @@ const MediaKit = ({ profile, setProfile }) => {
     followers: '250.000',
     engagementRate: '4.8%',
     youtubeViews: '75.000',
+    email: '',
+    bankHolder: '',
+    instagramFollowers: '',
+    tiktokFollowers: '',
+    tiktokLikes: '',
+    youtubeFollowers: '',
+    youtubeVideos: '',
     ratesList: [
       { service: '1x Instagram Reels', rate: 5000000 },
       { service: '3x Instagram Story Frames', rate: 2500000 },
@@ -117,7 +159,6 @@ const MediaKit = ({ profile, setProfile }) => {
       alert(`Gagal menerapkan tarif baru: ${err.message}`);
     }
   };
-
 
   useEffect(() => {
     if (profile) {
@@ -225,64 +266,224 @@ const MediaKit = ({ profile, setProfile }) => {
     setTimeout(() => setCopiedBody(false), 2000);
   };
 
+  const renderPdfContent = (isPreview = false) => {
+    const st = themeStyles[pdfTheme] || themeStyles.light;
+    
+    return (
+      <div style={{ 
+        padding: isPreview ? '24px' : '40px', 
+        backgroundColor: st.bg, 
+        color: st.text, 
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        borderRadius: isPreview ? 'var(--border-radius-md)' : '0',
+        border: isPreview ? `1px solid ${st.border}` : 'none',
+        boxShadow: isPreview ? '0 10px 15px -3px rgba(0,0,0,0.1)' : 'none',
+        transition: 'all 0.3s ease',
+        width: '100%',
+        boxSizing: 'border-box'
+      }}>
+        {/* Header accent bar */}
+        <div style={{ 
+          height: '6px', 
+          backgroundColor: st.accent, 
+          borderRadius: '3px 3px 0 0', 
+          margin: isPreview ? '-24px -24px 20px -24px' : '-40px -40px 30px -40px' 
+        }}></div>
+
+        {/* Bio & Brand Info */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px', borderBottom: `2px solid ${st.border}`, paddingBottom: '20px', marginBottom: '20px' }}>
+          <div>
+            <h1 style={{ fontSize: isPreview ? '22px' : '28px', margin: '0 0 4px 0', fontWeight: '800', letterSpacing: '-0.025em', color: st.text }}>
+              {formProfile.name || 'Nama Kreator'}
+            </h1>
+            <p style={{ color: st.accent, fontSize: isPreview ? '12px' : '14px', fontWeight: '600', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {formProfile.handle || '@username'} &bull; {formProfile.niche || 'Niche Konten'}
+            </p>
+            <p style={{ color: st.textSec, fontSize: '12.5px', lineHeight: '1.5', margin: 0, maxWidth: '500px' }}>
+              {formProfile.bio}
+            </p>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: st.textSec, minWidth: '180px', textAlign: isPreview ? 'left' : 'right' }}>
+            <div style={{ fontWeight: '700', textTransform: 'uppercase', color: st.text, marginBottom: '4px', letterSpacing: '0.05em' }}>KONTAK &amp; MEDIA</div>
+            {formProfile.email && <div>✉️ {formProfile.email}</div>}
+            {formProfile.instagram && <div style={{ wordBreak: 'break-all' }}>📸 instagram.com/{formProfile.handle}</div>}
+            {formProfile.tiktok && <div style={{ wordBreak: 'break-all' }}>🎵 tiktok.com/@{formProfile.handle}</div>}
+            {formProfile.youtube && <div style={{ wordBreak: 'break-all' }}>🎥 youtube.com/{formProfile.handle}</div>}
+          </div>
+        </div>
+
+        {/* Platform Stat breakdown */}
+        <div style={{ marginBottom: '24px' }}>
+          <h3 style={{ fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', color: st.text, letterSpacing: '0.05em', borderBottom: `1px solid ${st.border}`, paddingBottom: '6px', marginBottom: '12px' }}>
+            Statistik &amp; Jangkauan Akun
+          </h3>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+            {/* Instagram Card */}
+            <div style={{ padding: '12px', border: `1px solid ${st.border}`, borderRadius: '6px', backgroundColor: st.cardBg }}>
+              <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#e1306c', marginBottom: '6px' }}>
+                📸 Instagram
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <span style={{ fontSize: '18px', fontWeight: '800', color: st.text }}>{formProfile.instagramFollowers || '-'}</span>
+                <span style={{ fontSize: '9px', color: st.textSec }}>Pengikut</span>
+              </div>
+            </div>
+            
+            {/* TikTok Card */}
+            <div style={{ padding: '12px', border: `1px solid ${st.border}`, borderRadius: '6px', backgroundColor: st.cardBg }}>
+              <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: pdfTheme === 'dark' ? '#00f0ff' : '#000000', marginBottom: '6px' }}>
+                🎵 TikTok
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <span style={{ fontSize: '18px', fontWeight: '800', color: st.text }}>{formProfile.tiktokFollowers || '-'}</span>
+                <span style={{ fontSize: '9px', color: st.textSec }}>Pengikut {formProfile.tiktokLikes ? `(${formProfile.tiktokLikes} Likes)` : ''}</span>
+              </div>
+            </div>
+
+            {/* YouTube Card */}
+            <div style={{ padding: '12px', border: `1px solid ${st.border}`, borderRadius: '6px', backgroundColor: st.cardBg }}>
+              <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#ff0000', marginBottom: '6px' }}>
+                🎥 YouTube
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <span style={{ fontSize: '18px', fontWeight: '800', color: st.text }}>{formProfile.youtubeFollowers || '-'}</span>
+                <span style={{ fontSize: '9px', color: st.textSec }}>Subscribers {formProfile.youtubeVideos ? `(${formProfile.youtubeVideos} Video)` : ''}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Aggregated Stats Row */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginTop: '12px', padding: '10px 12px', border: `1px solid ${st.border}`, borderRadius: '6px', backgroundColor: st.accentBg }}>
+            <div style={{ display: 'flex', gap: '24px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '8.5px', textTransform: 'uppercase', color: st.textSec, fontWeight: '700' }}>Total Jangkauan (Audience Reach)</span>
+                <span style={{ fontSize: '14px', fontWeight: '800', color: st.text }}>{displayFollowers} Pengikut</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '8.5px', textTransform: 'uppercase', color: st.textSec, fontWeight: '700' }}>Engagement Rate</span>
+                <span style={{ fontSize: '14px', fontWeight: '800', color: st.accent }}>{formProfile.engagementRate || '4.8%'}</span>
+              </div>
+            </div>
+            {formProfile.youtubeViews && (
+              <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'right' }}>
+                <span style={{ fontSize: '8.5px', textTransform: 'uppercase', color: st.textSec, fontWeight: '700' }}>Rata-rata Views</span>
+                <span style={{ fontSize: '14px', fontWeight: '800', color: st.text }}>{formProfile.youtubeViews} / Post</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Recent Content Showcase */}
+        {formProfile.recentPosts && formProfile.recentPosts.length > 0 && (
+          <div style={{ marginBottom: '24px' }}>
+            <h3 style={{ fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', color: st.text, letterSpacing: '0.05em', borderBottom: `1px solid ${st.border}`, paddingBottom: '6px', marginBottom: '12px' }}>
+              Konten Terbaru &amp; Performa
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+              {formProfile.recentPosts.slice(0, 3).map((post, idx) => (
+                <div key={idx} style={{ padding: '10px', border: `1px solid ${st.border}`, borderRadius: '6px', backgroundColor: st.cardBg, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ 
+                      fontSize: '8px', 
+                      fontWeight: '700', 
+                      padding: '1px 5px', 
+                      borderRadius: '3px',
+                      backgroundColor: post.platform === 'TikTok' ? 'rgba(0,0,0,0.15)' : post.platform === 'YouTube' ? 'rgba(255,0,0,0.1)' : 'rgba(225,48,108,0.1)',
+                      color: post.platform === 'TikTok' ? st.text : post.platform === 'YouTube' ? '#ff0000' : '#e1306c'
+                    }}>
+                      {post.platform}
+                    </span>
+                    <span style={{ fontSize: '8px', color: st.textSec }}>{post.uploadDate}</span>
+                  </div>
+                  <div style={{ fontSize: '11px', fontWeight: '600', color: st.text, height: '32px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: '1.3' }}>
+                    {post.title}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: `1px solid ${st.border}`, paddingTop: '4px', fontSize: '9px', color: st.textSec }}>
+                    <span>👁️ {(post.views || 0).toLocaleString('id-ID')} views</span>
+                    <span>❤️ {(post.likes || 0).toLocaleString('id-ID')} likes</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Rate Card Table */}
+        <div style={{ marginBottom: '24px' }}>
+          <h3 style={{ fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', color: st.text, letterSpacing: '0.05em', borderBottom: `1px solid ${st.border}`, paddingBottom: '6px', marginBottom: '12px' }}>
+            Daftar Tarif Layanan (Rate Card)
+          </h3>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', border: `1px solid ${st.border}`, borderRadius: '6px', overflow: 'hidden' }}>
+            <thead>
+              <tr style={{ backgroundColor: st.cardBg, borderBottom: `1px solid ${st.border}` }}>
+                <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: '700', color: st.text }}>Jenis Deliverable</th>
+                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: '700', color: st.text }}>Tarif Bersih ({formProfile.currency || 'IDR'})</th>
+              </tr>
+            </thead>
+            <tbody>
+              {formProfile.ratesList.map((item, idx) => (
+                <tr key={idx} style={{ borderBottom: idx < formProfile.ratesList.length - 1 ? `1px solid ${st.border}` : 'none' }}>
+                  <td style={{ padding: '10px 12px', fontWeight: '500', color: st.text }}>{item.service}</td>
+                  <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: '700', color: st.accent }}>
+                    {formatCurrency(item.rate, formProfile.currency)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Cooperation terms */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '10px', color: st.textSec, borderTop: `1px solid ${st.border}`, paddingTop: '12px' }}>
+          <div>
+            <div style={{ fontWeight: '700', color: st.text, marginBottom: '4px', textTransform: 'uppercase' }}>Kebijakan &amp; Kerja Sama</div>
+            <ul style={{ paddingLeft: '12px', margin: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <li>Batas revisi gratis maksimal 2 kali untuk penyesuaian minor.</li>
+              <li>Draf konten dikirimkan untuk ditinjau 3 hari sebelum tayang.</li>
+              <li>Pihak Brand wajib menyediakan asset visual &amp; brief resmi.</li>
+            </ul>
+          </div>
+          <div>
+            <div style={{ fontWeight: '700', color: st.text, marginBottom: '4px', textTransform: 'uppercase' }}>Metode Pembayaran</div>
+            <ul style={{ paddingLeft: '12px', margin: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <li>Pembayaran transfer ke rekening atas nama: <strong>{formProfile.bankHolder || formProfile.name}</strong>.</li>
+              <li>Termin pembayaran standar: NET 30 setelah invoice resmi diterbitkan.</li>
+              <li>Uang muka (DP) 50% untuk kolaborasi baru.</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ 
+          marginTop: '24px', 
+          borderTop: `1px solid ${st.border}`, 
+          paddingTop: '12px', 
+          fontSize: '9.5px', 
+          color: st.textSec, 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center' 
+        }}>
+          <span>Konten media kit ini terintegrasi secara dinamis dengan CreatorManager.</span>
+          <strong>CREATORMANAGER</strong>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div>
       {/* Print-only Wrapper (Hidden on screen) */}
       <div id="print-section" className="print-only">
-        <div style={{ padding: '50px', backgroundColor: '#fff', color: '#000', fontFamily: 'sans-serif' }}>
-          <div style={{ textAlign: 'center', borderBottom: '2px solid #eaeaea', paddingBottom: '30px', marginBottom: '30px' }}>
-            <h1 style={{ fontSize: '32px', margin: '0 0 8px 0', color: '#8b5cf6' }}>MEDIA KIT</h1>
-            <h2 style={{ fontSize: '22px', margin: '0 0 4px 0', fontWeight: '600' }}>{formProfile.name}</h2>
-            <p style={{ color: '#666', fontSize: '14px', margin: 0 }}>{formProfile.handle} | {formProfile.niche}</p>
-          </div>
-
-          <div style={{ marginBottom: '30px' }}>
-            <h3 style={{ fontSize: '14px', textTransform: 'uppercase', color: '#666', borderBottom: '1px solid #eaeaea', paddingBottom: '6px' }}>Tentang Saya</h3>
-            <p style={{ fontSize: '13px', lineHeight: '1.6', margin: '8px 0 0 0', color: '#333' }}>{formProfile.bio}</p>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '40px', textAlign: 'center' }}>
-            <div style={{ padding: '20px', border: '1px solid #eaeaea', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
-              <span style={{ fontSize: '11px', textTransform: 'uppercase', color: '#888' }}>Pengikut (Followers)</span>
-              <h2 style={{ fontSize: '24px', margin: '6px 0 0 0', color: '#8b5cf6' }}>{displayFollowers}</h2>
-            </div>
-            <div style={{ padding: '20px', border: '1px solid #eaeaea', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
-              <span style={{ fontSize: '11px', textTransform: 'uppercase', color: '#888' }}>Engagement Rate</span>
-              <h2 style={{ fontSize: '24px', margin: '6px 0 0 0', color: '#8b5cf6' }}>{formProfile.engagementRate}</h2>
-            </div>
-            <div style={{ padding: '20px', border: '1px solid #eaeaea', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
-              <span style={{ fontSize: '11px', textTransform: 'uppercase', color: '#888' }}>Rata-rata Tayangan</span>
-              <h2 style={{ fontSize: '24px', margin: '6px 0 0 0', color: '#8b5cf6' }}>{formProfile.youtubeViews}</h2>
-            </div>
-          </div>
-
-          <div>
-            <h3 style={{ fontSize: '14px', textTransform: 'uppercase', color: '#666', borderBottom: '1px solid #eaeaea', paddingBottom: '6px', marginBottom: '16px' }}>Daftar Harga Jasa (Rate Card)</h3>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-              <tbody>
-                {formProfile.ratesList.map((item, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid #eaeaea' }}>
-                    <td style={{ padding: '12px 8px', fontWeight: '500' }}>{item.service}</td>
-                    <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: '600', color: '#8b5cf6' }}>
-                      {formatCurrency(item.rate, formProfile.currency)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div style={{ marginTop: '60px', borderTop: '1px solid #eaeaea', paddingTop: '20px', fontSize: '11px', color: '#999', textAlign: 'center' }}>
-            Hubungi saya via email/DM untuk detail penawaran kustom. Dibuat otomatis menggunakan CreatorManager.
-          </div>
-        </div>
+        {renderPdfContent(false)}
       </div>
 
       {/* Screen Layout */}
       <div className="no-print">
         <div className="content-header">
           <div className="content-title">
-            <h1>Generator Media Kit & Rate Card</h1>
+            <h1>Generator Media Kit &amp; Rate Card</h1>
             <p>Kelola profil statistik media sosial Anda dan buat Media Kit estetik yang siap diunduh menjadi PDF.</p>
           </div>
           <div className="header-actions">
@@ -290,7 +491,32 @@ const MediaKit = ({ profile, setProfile }) => {
               <button className="btn btn-secondary" onClick={() => setEditing(false)}>Batal</button>
             ) : (
               <>
-                <button className="btn btn-secondary" onClick={() => setEditing(true)}>Edit Profil & Harga</button>
+                {/* Print PDF Theme Selector */}
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginRight: '16px', backgroundColor: 'var(--bg-secondary)', padding: '4px 8px', borderRadius: 'var(--border-radius-md)', border: '1px solid var(--border-color)' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600' }}>TEMA PDF:</span>
+                  <button 
+                    className={`btn ${pdfTheme === 'light' ? 'btn-primary' : 'btn-secondary'}`} 
+                    onClick={() => setPdfTheme('light')}
+                    style={{ padding: '4px 8px', fontSize: '11px', height: '26px' }}
+                  >
+                    Clean Light
+                  </button>
+                  <button 
+                    className={`btn ${pdfTheme === 'dark' ? 'btn-primary' : 'btn-secondary'}`} 
+                    onClick={() => setPdfTheme('dark')}
+                    style={{ padding: '4px 8px', fontSize: '11px', height: '26px', backgroundColor: pdfTheme === 'dark' ? '#06b6d4' : '', borderColor: pdfTheme === 'dark' ? '#06b6d4' : '' }}
+                  >
+                    Midnight Cyan
+                  </button>
+                  <button 
+                    className={`btn ${pdfTheme === 'sunset' ? 'btn-primary' : 'btn-secondary'}`} 
+                    onClick={() => setPdfTheme('sunset')}
+                    style={{ padding: '4px 8px', fontSize: '11px', height: '26px', backgroundColor: pdfTheme === 'sunset' ? '#f43f5e' : '', borderColor: pdfTheme === 'sunset' ? '#f43f5e' : '' }}
+                  >
+                    Sunset Rose
+                  </button>
+                </div>
+                <button className="btn btn-secondary" onClick={() => setEditing(true)}>Edit Profil &amp; Harga</button>
                 <button className="btn btn-primary" onClick={handlePrint}><Download size={14} /> Cetak PDF</button>
               </>
             )}
@@ -318,7 +544,7 @@ const MediaKit = ({ profile, setProfile }) => {
           {/* Edit Form */}
           {editing ? (
             <div className="card">
-              <h3 style={{ fontSize: '16px', marginBottom: '20px' }}>Ubah Profil & Rate Card</h3>
+              <h3 style={{ fontSize: '16px', marginBottom: '20px' }}>Ubah Profil &amp; Rate Card</h3>
               <form onSubmit={handleSave}>
                 <div className="form-row">
                   <div className="form-group">
@@ -406,6 +632,81 @@ const MediaKit = ({ profile, setProfile }) => {
                   </div>
                 </div>
 
+                <div style={{ marginTop: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+                  <label style={{ fontWeight: '600', marginBottom: '12px', display: 'block' }}>Detail Akun &amp; Kontak Bisnis</label>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Email Bisnis</label>
+                      <input 
+                        type="email" 
+                        className="form-control"
+                        placeholder="email@bisnis.com"
+                        value={formProfile.email || ''}
+                        onChange={e => setFormProfile({ ...formProfile, email: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Nama Pemilik Rekening Bank (Bank Holder)</label>
+                      <input 
+                        type="text" 
+                        className="form-control"
+                        placeholder="Nama Lengkap"
+                        value={formProfile.bankHolder || ''}
+                        onChange={e => setFormProfile({ ...formProfile, bankHolder: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="form-row" style={{ marginTop: '12px' }}>
+                    <div className="form-group">
+                      <label>Pengikut Instagram (e.g. 115K)</label>
+                      <input 
+                        type="text" 
+                        className="form-control"
+                        value={formProfile.instagramFollowers || ''}
+                        onChange={e => setFormProfile({ ...formProfile, instagramFollowers: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Pengikut TikTok (e.g. 768K)</label>
+                      <input 
+                        type="text" 
+                        className="form-control"
+                        value={formProfile.tiktokFollowers || ''}
+                        onChange={e => setFormProfile({ ...formProfile, tiktokFollowers: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Likes TikTok (e.g. 56M)</label>
+                      <input 
+                        type="text" 
+                        className="form-control"
+                        value={formProfile.tiktokLikes || ''}
+                        onChange={e => setFormProfile({ ...formProfile, tiktokLikes: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="form-row" style={{ marginTop: '12px' }}>
+                    <div className="form-group">
+                      <label>Subscribers YouTube (e.g. 238K)</label>
+                      <input 
+                        type="text" 
+                        className="form-control"
+                        value={formProfile.youtubeFollowers || ''}
+                        onChange={e => setFormProfile({ ...formProfile, youtubeFollowers: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Total Video YouTube (e.g. 292)</label>
+                      <input 
+                        type="text" 
+                        className="form-control"
+                        value={formProfile.youtubeVideos || ''}
+                        onChange={e => setFormProfile({ ...formProfile, youtubeVideos: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div style={{ marginTop: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                     <label style={{ fontWeight: '600' }}>Daftar Harga Jasa (Rate Card)</label>
@@ -450,372 +751,311 @@ const MediaKit = ({ profile, setProfile }) => {
             </div>
           ) : (
             <>
-              {/* Preview Layout Screen */}
-              <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div style={{ display: 'flex', gap: '20px', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '20px' }}>
-                  <div style={{ 
-                    width: '64px', 
-                    height: '64px', 
-                    borderRadius: '50%', 
-                    backgroundColor: 'var(--accent-light)', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    border: '1px solid var(--border-color)'
-                  }}>
-                    <User size={28} style={{ color: 'var(--accent-color)' }} />
-                  </div>
-                  <div>
-                    <h2 style={{ fontSize: '20px', fontWeight: '700' }}>{formProfile.name}</h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{formProfile.handle} | <span style={{ color: 'var(--accent-color)', fontWeight: '600' }}>{formProfile.niche}</span></p>
-                  </div>
+              {/* Live Media Kit Preview Column */}
+              <div>
+                <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 style={{ fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-secondary)', letterSpacing: '0.05em', margin: 0 }}>
+                    Pratinjau Media Kit
+                  </h3>
+                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    Tampilan live sesuai tema cetak terpilih
+                  </span>
                 </div>
-
-                <div>
-                  <h4 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '8px' }}>Tentang Kreator:</h4>
-                  <p style={{ fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.6' }}>{formProfile.bio}</p>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
-                  <div className="card" style={{ backgroundColor: 'var(--bg-tertiary)', padding: '16px', textAlign: 'center' }}>
-                    <span style={{ fontSize: '10px', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Followers</span>
-                    <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--accent-color)', marginTop: '4px' }}>{displayFollowers}</h3>
-                  </div>
-                  <div className="card" style={{ backgroundColor: 'var(--bg-tertiary)', padding: '16px', textAlign: 'center' }}>
-                    <span style={{ fontSize: '10px', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Engagement Rate</span>
-                    <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--accent-color)', marginTop: '4px' }}>{formProfile.engagementRate}</h3>
-                  </div>
-                  <div className="card" style={{ backgroundColor: 'var(--bg-tertiary)', padding: '16px', textAlign: 'center' }}>
-                    <span style={{ fontSize: '10px', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Avg. Views</span>
-                    <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--accent-color)', marginTop: '4px' }}>{formProfile.youtubeViews}</h3>
-                  </div>
-                </div>
+                {renderPdfContent(true)}
               </div>
 
-              {/* Rate Card Preview List */}
-              <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-                <h3 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
-                  Rate Card (Jasa Layanan)
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto', maxHeight: '320px' }}>
-                  {formProfile.ratesList.map((item, idx) => (
-                    <div 
-                      key={idx} 
-                      style={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
-                        alignItems: 'center', 
-                        padding: '12px 14px', 
-                        borderRadius: 'var(--border-radius-md)', 
-                        backgroundColor: 'var(--bg-tertiary)',
-                        border: '1px solid var(--border-color)'
-                      }}
-                    >
-                      <span style={{ fontSize: '13px', fontWeight: '500' }}>{item.service}</span>
-                      <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--success-color)' }}>
-                        {formatCurrency(item.rate, formProfile.currency)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Interactive Brand Pitch Generator Panel */}
-          {!editing && (
-            <div className="card" style={{ gridColumn: 'span 2', marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Sparkles size={18} className="text-accent" style={{ color: 'var(--accent-color)' }} /> Generator Penawaran Sponsor (Brand Pitch)
-                </h3>
-                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>Buat draf proposal email sponsor penawaran kerja sama untuk brand target menggunakan data Media Kit Anda.</p>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-                {/* Brand Name */}
-                <div className="form-group">
-                  <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)' }}>NAMA BRAND TARGET</label>
-                  <input 
-                    type="text" 
-                    className="form-control" 
-                    placeholder="misal: Tokopedia, Shopee, Samsung"
-                    value={pitchBrandName}
-                    onChange={(e) => setPitchBrandName(e.target.value)}
-                  />
+              {/* Brand Pitch Generator Column */}
+              <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '20px', height: 'fit-content' }}>
+                <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+                  <h3 style={{ fontSize: '15px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                    <Sparkles size={16} className="text-accent" style={{ color: 'var(--accent-color)' }} /> Proposal Sponsor (Brand Pitch)
+                  </h3>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px', lineHeight: '1.4' }}>Buat draf proposal email sponsor untuk brand target menggunakan data Media Kit Anda.</p>
                 </div>
 
-                {/* Campaign Objective */}
-                <div className="form-group">
-                  <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)' }}>TUJUAN KAMPANYE</label>
-                  <select 
-                    className="form-control"
-                    value={pitchObjective}
-                    onChange={(e) => setPitchObjective(e.target.value)}
-                  >
-                    <option value="Brand Awareness">Brand Awareness (Jangkauan luas)</option>
-                    <option value="Product Launch">Product Launch (Peluncuran produk baru)</option>
-                    <option value="Conversions / Sales">Conversions / Sales (Penjualan/Klik)</option>
-                  </select>
-                </div>
-
-                {/* Selected Service */}
-                <div className="form-group">
-                  <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)' }}>LAYANAN JASA DITAWARKAN</label>
-                  <select 
-                    className="form-control"
-                    value={pitchServiceIdx}
-                    onChange={(e) => setPitchServiceIdx(parseInt(e.target.value))}
-                  >
-                    {formProfile.ratesList.map((item, idx) => (
-                      <option key={idx} value={idx}>
-                        {item.service} ({formatCurrency(item.rate, formProfile.currency)})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Tone of Voice */}
-                <div className="form-group">
-                  <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)' }}>GAYA BAHASA (TONE)</label>
-                  <select 
-                    className="form-control"
-                    value={pitchTone}
-                    onChange={(e) => setPitchTone(e.target.value)}
-                  >
-                    <option value="Profesional Formal">Profesional & Formal</option>
-                    <option value="Kasual / Akrab">Kasual & Akrab</option>
-                    <option value="Kreatif / Out of the box">Kreatif & Out of the box</option>
-                  </select>
-                </div>
-              </div>
-
-              <button 
-                className="btn btn-primary"
-                onClick={handleGeneratePitch}
-                disabled={pitchLoading || !pitchBrandName.trim()}
-                style={{ width: '100%' }}
-              >
-                {pitchLoading ? 'Menyusun Proposal AI...' : 'Buat Proposal Penawaran (AI)'}
-              </button>
-
-              {/* Pitch Output Preview */}
-              {(pitchSubject || pitchBody) && (
-                <div style={{ 
-                  marginTop: '16px',
-                  padding: '16px',
-                  borderRadius: 'var(--border-radius-md)',
-                  backgroundColor: 'var(--bg-tertiary)',
-                  border: '1px solid var(--border-color)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '16px'
-                }}>
-                  {/* Subject Line */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)' }}>SUBJEK EMAIL</span>
-                      <button 
-                        className="btn btn-secondary"
-                        onClick={handleCopyPitchSubject}
-                        style={{ padding: '2px 8px', fontSize: '11px', height: '24px' }}
-                      >
-                        {copiedSubject ? <><Check size={10} style={{ color: 'var(--success-color)' }} /> Tersalin</> : <><Copy size={10} /> Salin Subjek</>}
-                      </button>
-                    </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {/* Brand Name */}
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>NAMA BRAND TARGET</label>
                     <input 
                       type="text" 
                       className="form-control" 
-                      value={pitchSubject}
-                      onChange={(e) => setPitchSubject(e.target.value)}
-                      style={{ fontSize: '13px', fontWeight: '500' }}
+                      placeholder="misal: Tokopedia, Shopee, Samsung"
+                      value={pitchBrandName}
+                      onChange={(e) => setPitchBrandName(e.target.value)}
                     />
                   </div>
 
-                  {/* Body Text */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)' }}>ISI EMAIL PENAWARAN (PITCH)</span>
-                      <div style={{ display: 'flex', gap: '8px' }}>
+                  {/* Campaign Objective */}
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>TUJUAN KAMPANYE</label>
+                    <select 
+                      className="form-control"
+                      value={pitchObjective}
+                      onChange={(e) => setPitchObjective(e.target.value)}
+                    >
+                      <option value="Brand Awareness">Brand Awareness (Jangkauan luas)</option>
+                      <option value="Product Launch">Product Launch (Produk baru)</option>
+                      <option value="Conversions / Sales">Conversions / Sales (Penjualan)</option>
+                    </select>
+                  </div>
+
+                  {/* Selected Service */}
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>LAYANAN JASA DITAWARKAN</label>
+                    <select 
+                      className="form-control"
+                      value={pitchServiceIdx}
+                      onChange={(e) => setPitchServiceIdx(parseInt(e.target.value))}
+                    >
+                      {formProfile.ratesList.map((item, idx) => (
+                        <option key={idx} value={idx}>
+                          {item.service} ({formatCurrency(item.rate, formProfile.currency)})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Tone of Voice */}
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>GAYA BAHASA (TONE)</label>
+                    <select 
+                      className="form-control"
+                      value={pitchTone}
+                      onChange={(e) => setPitchTone(e.target.value)}
+                    >
+                      <option value="Profesional Formal">Profesional &amp; Formal</option>
+                      <option value="Kasual / Akrab">Kasual &amp; Akrab</option>
+                      <option value="Kreatif / Out of the box">Kreatif &amp; Out of the box</option>
+                    </select>
+                  </div>
+                </div>
+
+                <button 
+                  className="btn btn-primary"
+                  onClick={handleGeneratePitch}
+                  disabled={pitchLoading || !pitchBrandName.trim()}
+                  style={{ width: '100%', marginTop: '4px' }}
+                >
+                  {pitchLoading ? 'Menyusun Proposal AI...' : 'Buat Proposal Penawaran (AI)'}
+                </button>
+
+                {/* Pitch Output Preview */}
+                {(pitchSubject || pitchBody) && (
+                  <div style={{ 
+                    marginTop: '12px',
+                    padding: '14px',
+                    borderRadius: 'var(--border-radius-md)',
+                    backgroundColor: 'var(--bg-tertiary)',
+                    border: '1px solid var(--border-color)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px'
+                  }}>
+                    {/* Subject Line */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '9px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>SUBJEK EMAIL</span>
                         <button 
                           className="btn btn-secondary"
-                          onClick={handleCopyPitchBody}
-                          style={{ padding: '2px 8px', fontSize: '11px', height: '24px' }}
+                          onClick={handleCopyPitchSubject}
+                          style={{ padding: '2px 6px', fontSize: '10px', height: '22px' }}
                         >
-                          {copiedBody ? <><Check size={10} style={{ color: 'var(--success-color)' }} /> Tersalin</> : <><Copy size={10} /> Salin Isi Email</>}
+                          {copiedSubject ? <><Check size={10} style={{ color: 'var(--success-color)' }} /> Tersalin</> : <><Copy size={10} /> Salin</>}
                         </button>
-                        <a 
-                          href={`mailto:?subject=${encodeURIComponent(pitchSubject)}&body=${encodeURIComponent(pitchBody)}`}
-                          className="btn btn-primary"
-                          style={{ 
-                            padding: '2px 8px', 
-                            fontSize: '11px', 
-                            height: '24px', 
-                            display: 'inline-flex', 
-                            alignItems: 'center', 
-                            gap: '4px',
-                            textDecoration: 'none',
-                            color: '#fff'
-                          }}
-                        >
-                          <Send size={10} /> Kirim Langsung
-                        </a>
                       </div>
+                      <input 
+                        type="text" 
+                        className="form-control" 
+                        value={pitchSubject}
+                        onChange={(e) => setPitchSubject(e.target.value)}
+                        style={{ fontSize: '12.5px', fontWeight: '500' }}
+                      />
                     </div>
-                    <textarea 
-                      className="form-control" 
-                      value={pitchBody}
-                      onChange={(e) => setPitchBody(e.target.value)}
-                      style={{ minHeight: '220px', fontSize: '12.5px', fontFamily: 'var(--font-sans)', lineHeight: '1.6' }}
-                    />
+
+                    {/* Body Text */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '9px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>ISI EMAIL PITCH</span>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button 
+                            className="btn btn-secondary"
+                            onClick={handleCopyPitchBody}
+                            style={{ padding: '2px 6px', fontSize: '10px', height: '22px' }}
+                          >
+                            {copiedBody ? <><Check size={10} style={{ color: 'var(--success-color)' }} /> Tersalin</> : <><Copy size={10} /> Salin</>}
+                          </button>
+                          <a 
+                            href={`mailto:?subject=${encodeURIComponent(pitchSubject)}&body=${encodeURIComponent(pitchBody)}`}
+                            className="btn btn-primary"
+                            style={{ 
+                              padding: '2px 6px', 
+                              fontSize: '10px', 
+                              height: '22px', 
+                              display: 'inline-flex', 
+                              alignItems: 'center', 
+                              gap: '4px',
+                              textDecoration: 'none',
+                              color: '#fff'
+                            }}
+                          >
+                            <Send size={8} /> Kirim
+                          </a>
+                        </div>
+                      </div>
+                      <textarea 
+                        className="form-control" 
+                        value={pitchBody}
+                        onChange={(e) => setPitchBody(e.target.value)}
+                        style={{ minHeight: '180px', fontSize: '12px', fontFamily: 'var(--font-sans)', lineHeight: '1.55' }}
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            </>
           )}
+        </div>
 
-          {/* AI Rate Card & Target Income Optimizer Panel */}
-          {!editing && (
-            <div className="card" style={{ gridColumn: 'span 2', marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-                  <Sparkles size={18} className="text-accent" style={{ color: 'var(--accent-color)' }} /> Kalkulator Optimalisasi Pendapatan & Rate Card (AI)
-                </h3>
-                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>Masukkan target pendapatan bulanan Anda untuk merancang struktur rate card optimal berdasarkan metrik akun Anda.</p>
+        {/* AI Rate Card & Target Income Optimizer Panel */}
+        {!editing && (
+          <div className="card" style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                <Sparkles size={18} className="text-accent" style={{ color: 'var(--accent-color)' }} /> Kalkulator Optimalisasi Pendapatan &amp; Rate Card (AI)
+              </h3>
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>Masukkan target pendapatan bulanan Anda untuk merancang struktur rate card optimal berdasarkan metrik akun Anda.</p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <div className="form-group" style={{ flexGrow: 1, minWidth: '200px', marginBottom: 0 }}>
+                <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)' }}>TARGET PENDAPATAN BULANAN (NET - {formProfile.currency || 'IDR'})</label>
+                <input 
+                  type="number" 
+                  className="form-control" 
+                  value={targetIncomeVal}
+                  onChange={(e) => setTargetIncomeVal(e.target.value)}
+                  placeholder="misal: 15000000"
+                />
               </div>
+              <button 
+                className="btn btn-primary" 
+                onClick={handleOptimizeRates}
+                disabled={optimizeLoading || !targetIncomeVal}
+                style={{ height: '38px', minWidth: '160px' }}
+              >
+                {optimizeLoading ? 'Mengoptimalkan...' : 'Optimalkan Rate Card'}
+              </button>
+            </div>
 
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                <div className="form-group" style={{ flexGrow: 1, minWidth: '200px', marginBottom: 0 }}>
-                  <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)' }}>TARGET PENDAPATAN BULANAN (NET - {formProfile.currency || 'IDR'})</label>
-                  <input 
-                    type="number" 
-                    className="form-control" 
-                    value={targetIncomeVal}
-                    onChange={(e) => setTargetIncomeVal(e.target.value)}
-                    placeholder="misal: 15000000"
-                  />
+            {optResult && (
+              <div style={{ 
+                marginTop: '12px',
+                padding: '18px',
+                borderRadius: 'var(--border-radius-md)',
+                backgroundColor: 'var(--bg-tertiary)',
+                border: '1px solid var(--border-color)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '20px'
+              }}>
+                {/* Analysis Text */}
+                <div>
+                  <h4 style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '6px' }}>Analisis Kelayakan AI</h4>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5', margin: 0 }}>{optResult.analysis}</p>
                 </div>
-                <button 
-                  className="btn btn-primary" 
-                  onClick={handleOptimizeRates}
-                  disabled={optimizeLoading || !targetIncomeVal}
-                  style={{ height: '38px', minWidth: '160px' }}
-                >
-                  {optimizeLoading ? 'Mengoptimalkan...' : 'Optimalkan Rate Card'}
-                </button>
-              </div>
 
-              {optResult && (
-                <div style={{ 
-                  marginTop: '12px',
-                  padding: '18px',
-                  borderRadius: 'var(--border-radius-md)',
-                  backgroundColor: 'var(--bg-tertiary)',
-                  border: '1px solid var(--border-color)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '20px'
-                }}>
-                  {/* Analysis Text */}
-                  <div>
-                    <h4 style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '6px' }}>Analisis Kelayakan AI</h4>
-                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5', margin: 0 }}>{optResult.analysis}</p>
-                  </div>
-
-                  {/* Recommended Rates Table */}
-                  <div>
-                    <h4 style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>Rekomendasi Tarif Per Postingan</h4>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', textAlign: 'left' }}>
-                        <thead>
-                          <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                            <th style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--text-secondary)' }}>Jasa Layanan</th>
-                            <th style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'right' }}>Tarif Rekomendasi AI</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {optResult.recommendedRates.map((item, idx) => (
-                            <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                              <td style={{ padding: '8px 12px', color: 'var(--text-primary)', fontWeight: '500' }}>{item.service}</td>
-                              <td style={{ padding: '8px 12px', color: 'var(--success-color)', fontWeight: '600', textAlign: 'right' }}>
-                                {formatCurrency(item.rate, formProfile.currency)}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  {/* Monthly Action Plan Table */}
-                  <div>
-                    <h4 style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>Rencana Kerja Bulanan Untuk Target</h4>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', textAlign: 'left' }}>
-                        <thead>
-                          <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                            <th style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--text-secondary)' }}>Deliverable</th>
-                            <th style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'right' }}>Tarif</th>
-                            <th style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'center' }}>Jumlah Post</th>
-                            <th style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'right' }}>Subtotal</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {optResult.monthlyPlan.map((item, idx) => (
-                            <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                              <td style={{ padding: '8px 12px', color: 'var(--text-primary)' }}>{item.item}</td>
-                              <td style={{ padding: '8px 12px', color: 'var(--text-secondary)', textAlign: 'right' }}>{formatCurrency(item.rate, formProfile.currency)}</td>
-                              <td style={{ padding: '8px 12px', color: 'var(--text-primary)', textAlign: 'center', fontWeight: '600' }}>{item.quantity}x</td>
-                              <td style={{ padding: '8px 12px', color: 'var(--success-color)', fontWeight: '600', textAlign: 'right' }}>{formatCurrency(item.subtotal, formProfile.currency)}</td>
-                            </tr>
-                          ))}
-                          <tr style={{ borderTop: '1.5px solid var(--border-color)' }}>
-                            <td colSpan="3" style={{ padding: '10px 12px', fontWeight: '700', color: 'var(--text-primary)' }}>Estimasi Pendapatan Kotor Bulanan</td>
-                            <td style={{ padding: '10px 12px', fontWeight: '700', color: 'var(--success-color)', textAlign: 'right', fontSize: '14.5px' }}>
-                              {formatCurrency(optResult.totalEstimated, formProfile.currency)}
+                {/* Recommended Rates Table */}
+                <div>
+                  <h4 style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>Rekomendasi Tarif Per Postingan</h4>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                          <th style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--text-secondary)' }}>Jasa Layanan</th>
+                          <th style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'right' }}>Tarif Rekomendasi AI</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {optResult.recommendedRates.map((item, idx) => (
+                          <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <td style={{ padding: '8px 12px', color: 'var(--text-primary)', fontWeight: '500' }}>{item.service}</td>
+                            <td style={{ padding: '8px 12px', color: 'var(--success-color)', fontWeight: '600', textAlign: 'right' }}>
+                              {formatCurrency(item.rate, formProfile.currency)}
                             </td>
                           </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  {/* Action Tips */}
-                  <div>
-                    <h4 style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>Rekomendasi Bisnis & Negosiasi AI</h4>
-                    <ul style={{ paddingLeft: '18px', margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {optResult.actionTips.map((tip, idx) => (
-                        <li key={idx} style={{ fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{tip}</li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Apply Rates Button */}
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '14px' }}>
-                    <button 
-                      className={`btn ${applySuccess ? 'btn-secondary' : 'btn-primary'}`}
-                      onClick={handleApplyRecommendedRates}
-                      disabled={applySuccess}
-                      style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', padding: '8px 16px' }}
-                    >
-                      {applySuccess ? (
-                        <>
-                          <Check size={14} style={{ color: 'var(--success-color)' }} /> Tarif Baru Berhasil Diterapkan!
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles size={14} /> Terapkan Rekomendasi Tarif AI Ke Media Kit
-                        </>
-                      )}
-                    </button>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
-              )}
-            </div>
-          )}
 
+                {/* Monthly Action Plan Table */}
+                <div>
+                  <h4 style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>Rencana Kerja Bulanan Untuk Target</h4>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                          <th style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--text-secondary)' }}>Deliverable</th>
+                          <th style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'right' }}>Tarif</th>
+                          <th style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'center' }}>Jumlah Post</th>
+                          <th style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'right' }}>Subtotal</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {optResult.monthlyPlan.map((item, idx) => (
+                          <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <td style={{ padding: '8px 12px', color: 'var(--text-primary)' }}>{item.item}</td>
+                            <td style={{ padding: '8px 12px', color: 'var(--text-secondary)', textAlign: 'right' }}>{formatCurrency(item.rate, formProfile.currency)}</td>
+                            <td style={{ padding: '8px 12px', color: 'var(--text-primary)', textAlign: 'center', fontWeight: '600' }}>{item.quantity}x</td>
+                            <td style={{ padding: '8px 12px', color: 'var(--success-color)', fontWeight: '600', textAlign: 'right' }}>{formatCurrency(item.subtotal, formProfile.currency)}</td>
+                          </tr>
+                        ))}
+                        <tr style={{ borderTop: '1.5px solid var(--border-color)' }}>
+                          <td colSpan="3" style={{ padding: '10px 12px', fontWeight: '700', color: 'var(--text-primary)' }}>Estimasi Pendapatan Kotor Bulanan</td>
+                          <td style={{ padding: '10px 12px', fontWeight: '700', color: 'var(--success-color)', textAlign: 'right', fontSize: '14.5px' }}>
+                            {formatCurrency(optResult.totalEstimated, formProfile.currency)}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
 
-        </div>
+                {/* Action Tips */}
+                <div>
+                  <h4 style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>Rekomendasi Bisnis &amp; Negosiasi AI</h4>
+                  <ul style={{ paddingLeft: '18px', margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {optResult.actionTips.map((tip, idx) => (
+                      <li key={idx} style={{ fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{tip}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Apply Rates Button */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '14px' }}>
+                  <button 
+                    className={`btn ${applySuccess ? 'btn-secondary' : 'btn-primary'}`}
+                    onClick={handleApplyRecommendedRates}
+                    disabled={applySuccess}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', padding: '8px 16px' }}
+                  >
+                    {applySuccess ? (
+                      <>
+                        <Check size={14} style={{ color: 'var(--success-color)' }} /> Tarif Baru Berhasil Diterapkan!
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={14} /> Terapkan Rekomendasi Tarif AI Ke Media Kit
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

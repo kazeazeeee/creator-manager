@@ -813,9 +813,7 @@ textarea.form-control {
   }
   
   body {
-    background-color: white !important;
-    color: black !important;
-    font-family: Arial, sans-serif !important;
+    background-color: transparent !important;
     margin: 1.6cm !important;
   }
   
@@ -824,16 +822,13 @@ textarea.form-control {
     padding: 0 !important;
     max-width: 100% !important;
     width: 100% !important;
-    background-color: white !important;
-    color: black !important;
+    background-color: transparent !important;
   }
   
   #print-section {
     display: block !important;
     width: 100% !important;
     max-width: 100% !important;
-    background-color: white !important;
-    color: black !important;
     position: static !important;
     padding: 0 !important;
   }
