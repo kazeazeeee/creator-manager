@@ -981,7 +981,7 @@ const AIPortal = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEvent })
               </div>
             </div>
             
-            <div className="card" style={{ padding: '12px', fontSize: '13px', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+            <div className="card" style={{ padding: '12px', fontSize: '13px', backgroundColor: 'var(--bg-tertiary)' }}>
               <div style={{ marginBottom: '8px' }}><strong>Brand:</strong> {actionResult.brand}</div>
               <div style={{ marginBottom: '8px' }}><strong>Proyek:</strong> {actionResult.projectName}</div>
               <div style={{ marginBottom: '8px' }}><strong>Deliverables:</strong> {actionResult.deliverables}</div>
@@ -1019,7 +1019,7 @@ const AIPortal = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEvent })
               </button>
             </div>
 
-            <div className="card" style={{ padding: '12px', fontSize: '13px', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+            <div className="card" style={{ padding: '12px', fontSize: '13px', backgroundColor: 'var(--bg-tertiary)' }}>
               <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <strong>Risiko Eksklusivitas:</strong> 
                 <span style={{ color: actionResult.hasExclusivity ? '#EF4444' : '#10B981', fontWeight: '600' }}>
@@ -1071,7 +1071,7 @@ const AIPortal = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEvent })
               rows="8"
               value={textOut}
               readOnly
-              style={{ fontSize: '13px', backgroundColor: 'rgba(255,255,255,0.01)', fontFamily: 'monospace' }}
+              style={{ fontSize: '13px', backgroundColor: 'var(--bg-tertiary)', fontFamily: 'monospace' }}
             />
           </div>
         );
@@ -1089,7 +1089,7 @@ const AIPortal = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEvent })
               rows="8"
               value={actionResult.pitch}
               readOnly
-              style={{ fontSize: '13px', backgroundColor: 'rgba(255,255,255,0.01)', fontFamily: 'monospace' }}
+              style={{ fontSize: '13px', backgroundColor: 'var(--bg-tertiary)', fontFamily: 'monospace' }}
             />
           </div>
         );
@@ -1103,7 +1103,7 @@ const AIPortal = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEvent })
               </button>
             </div>
 
-            <div className="card" style={{ padding: '12px', fontSize: '13px', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+            <div className="card" style={{ padding: '12px', fontSize: '13px', backgroundColor: 'var(--bg-tertiary)' }}>
               <strong>Ide Hook Pembuka:</strong>
               <ul style={{ paddingLeft: '16px', marginTop: '4px', marginBottom: '12px' }}>
                 {actionResult.hooks?.map((h, i) => <li key={i}>"{h}"</li>)}
@@ -1123,7 +1123,7 @@ const AIPortal = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEvent })
               </button>
             </div>
 
-            <div className="card" style={{ padding: '12px', fontSize: '13px', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+            <div className="card" style={{ padding: '12px', fontSize: '13px', backgroundColor: 'var(--bg-tertiary)' }}>
               <div style={{ marginBottom: '10px' }}>
                 <strong>Tren Musik/Audio:</strong>
                 <p style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>{actionResult.trendingAudio}</p>
@@ -1160,7 +1160,7 @@ const AIPortal = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEvent })
               rows="8"
               value={finText}
               readOnly
-              style={{ fontSize: '13px', backgroundColor: 'rgba(255,255,255,0.01)', fontFamily: 'monospace' }}
+              style={{ fontSize: '13px', backgroundColor: 'var(--bg-tertiary)', fontFamily: 'monospace' }}
             />
           </div>
         );
@@ -1176,7 +1176,7 @@ const AIPortal = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEvent })
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {actionResult.replies?.map((r, i) => (
-                <div key={i} className="card" style={{ padding: '10px', fontSize: '12px', backgroundColor: 'rgba(255,255,255,0.01)' }}>
+                <div key={i} className="card" style={{ padding: '10px', fontSize: '12px', backgroundColor: 'var(--bg-tertiary)' }}>
                   <div style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>💬 "{r.comment}"</div>
                   <div style={{ color: 'var(--accent-color)', fontWeight: '500', marginTop: '4px' }}>➡️ {r.reply}</div>
                 </div>
@@ -1194,17 +1194,17 @@ const AIPortal = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEvent })
               </button>
             </div>
 
-            <div className="card" style={{ padding: '12px', fontSize: '13px', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+            <div className="card" style={{ padding: '12px', fontSize: '13px', backgroundColor: 'var(--bg-tertiary)' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '8px', borderRadius: 'var(--border-radius-sm)', textAlign: 'center' }}>
+                <div style={{ background: 'var(--bg-tertiary)', padding: '8px', borderRadius: 'var(--border-radius-sm)', textAlign: 'center' }}>
                   <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Engagement Rate</div>
                   <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--accent-color)' }}>{actionResult.er}</div>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '8px', borderRadius: 'var(--border-radius-sm)', textAlign: 'center' }}>
+                <div style={{ background: 'var(--bg-tertiary)', padding: '8px', borderRadius: 'var(--border-radius-sm)', textAlign: 'center' }}>
                   <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>CTR (Klik Link)</div>
                   <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#10B981' }}>{actionResult.ctr}</div>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '8px', borderRadius: 'var(--border-radius-sm)', textAlign: 'center' }}>
+                <div style={{ background: 'var(--bg-tertiary)', padding: '8px', borderRadius: 'var(--border-radius-sm)', textAlign: 'center' }}>
                   <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Kategori Performa</div>
                   <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#F59E0B', marginTop: '2px' }}>{actionResult.performanceGrade}</div>
                 </div>
@@ -1233,7 +1233,7 @@ const AIPortal = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEvent })
               </button>
             </div>
 
-            <div className="card" style={{ padding: '12px', fontSize: '13px', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+            <div className="card" style={{ padding: '12px', fontSize: '13px', backgroundColor: 'var(--bg-tertiary)' }}>
               <div style={{ marginBottom: '8px' }}>
                 <strong>Risiko Burnout:</strong> <span style={{ color: wColor, fontWeight: 'bold' }}>{actionResult.burnoutRisk}</span>
               </div>
@@ -1339,7 +1339,7 @@ const AIPortal = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEvent })
                   setActiveAgent(null);
                   setIsMeeting(false);
                 }} 
-                style={{ background: 'transparent', border: 'none', color: '#a0aec0', cursor: 'pointer' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
               >
                 <X size={18} />
               </button>
@@ -1351,8 +1351,8 @@ const AIPortal = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEvent })
                   type="button"
                   style={{
                     flex: 1, padding: '6px', fontSize: '11px', borderRadius: '4px', border: 'none', cursor: 'pointer',
-                    background: workspaceTab === 'quick' ? '#3182ce' : 'rgba(255,255,255,0.05)',
-                    color: workspaceTab === 'quick' ? '#fff' : '#a0aec0'
+                    background: workspaceTab === 'quick' ? 'var(--accent-color)' : 'var(--bg-tertiary)',
+                    color: workspaceTab === 'quick' ? '#fff' : 'var(--text-secondary)'
                   }}
                   onClick={() => setWorkspaceTab('quick')}
                 >
@@ -1362,8 +1362,8 @@ const AIPortal = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEvent })
                   type="button"
                   style={{
                     flex: 1, padding: '6px', fontSize: '11px', borderRadius: '4px', border: 'none', cursor: 'pointer',
-                    background: workspaceTab === 'chat' ? '#3182ce' : 'rgba(255,255,255,0.05)',
-                    color: workspaceTab === 'chat' ? '#fff' : '#a0aec0'
+                    background: workspaceTab === 'chat' ? 'var(--accent-color)' : 'var(--bg-tertiary)',
+                    color: workspaceTab === 'chat' ? '#fff' : 'var(--text-secondary)'
                   }}
                   onClick={() => setWorkspaceTab('chat')}
                 >
@@ -1384,7 +1384,7 @@ const AIPortal = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEvent })
                     </div>
                   ))}
                   {chatLoading && (
-                    <div style={{ fontSize: '11px', color: '#a0aec0', padding: '10px' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', padding: '10px' }}>
                       Agen sedang berdiskusi merumuskan jawaban...
                     </div>
                   )}
@@ -1397,7 +1397,7 @@ const AIPortal = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEvent })
                     onChange={(e) => setChatInput(e.target.value)}
                     placeholder="Apa yang ingin dibahas tim?"
                     disabled={chatLoading}
-                    style={{ flexGrow: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid #4a5568', borderRadius: '6px', padding: '10px', color: '#e2e8f0', fontSize: '12px' }}
+                    style={{ flexGrow: 1, background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '10px', color: 'var(--text-primary)', fontSize: '12px' }}
                   />
                   <button type="submit" disabled={chatLoading} style={{ background: '#3182ce', border: 'none', borderRadius: '6px', padding: '0 15px', color: '#fff', cursor: 'pointer' }}>
                     <Send size={16} />
@@ -1414,7 +1414,7 @@ const AIPortal = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEvent })
                     </div>
                   ))}
                   {chatLoading && (
-                    <div style={{ fontSize: '11px', color: '#a0aec0', padding: '10px' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', padding: '10px' }}>
                       {activeAgent.name} mengetik...
                     </div>
                   )}
@@ -1427,7 +1427,7 @@ const AIPortal = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEvent })
                     onChange={(e) => setChatInput(e.target.value)}
                     placeholder={`Instruksi untuk ${activeAgent.name}...`}
                     disabled={chatLoading}
-                    style={{ flexGrow: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid #4a5568', borderRadius: '6px', padding: '10px', color: '#e2e8f0', fontSize: '12px' }}
+                    style={{ flexGrow: 1, background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '10px', color: 'var(--text-primary)', fontSize: '12px' }}
                   />
                   <button type="submit" disabled={chatLoading} style={{ background: '#3182ce', border: 'none', borderRadius: '6px', padding: '0 15px', color: '#fff', cursor: 'pointer' }}>
                     <Send size={16} />

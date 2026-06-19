@@ -1549,7 +1549,7 @@ textarea.form-control {
   width: 100%;
   height: 100vh;
   overflow: hidden;
-  background: #111418; /* Darker than primary for deep space feel */
+  background: var(--bg-primary); 
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1572,12 +1572,12 @@ textarea.form-control {
   left: 0;
   width: 100%;
   height: 100%;
-  background: #1e2329; /* Slate floor */
-  border: 2px solid #2d3742;
-  box-shadow: inset 0 0 80px rgba(0,0,0,0.8), 30px 30px 80px rgba(0,0,0,0.9);
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  box-shadow: inset 0 0 80px rgba(0,0,0,0.2), 30px 30px 80px rgba(0,0,0,0.1);
   background-image: 
-    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    linear-gradient(var(--border-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
   background-size: 50px 50px;
 }
 
@@ -1588,7 +1588,7 @@ textarea.form-control {
   left: 0;
   width: 20px;
   height: 100%;
-  background: #2a313b;
+  background: var(--bg-tertiary);
   transform-origin: left;
   transform: rotateY(90deg);
 }
@@ -1598,7 +1598,7 @@ textarea.form-control {
   left: 0;
   width: 100%;
   height: 20px;
-  background: #21272f;
+  background: var(--bg-tertiary);
   transform-origin: top;
   transform: rotateX(-90deg);
 }
@@ -1607,11 +1607,11 @@ textarea.form-control {
   position: absolute;
   width: 200px;
   height: 300px;
-  background: #2f404d;
+  background: var(--bg-tertiary);
   transform: translate(-50%, -50%) translateZ(25px);
   border-radius: 12px;
-  box-shadow: -15px 15px 30px rgba(0,0,0,0.6);
-  border: 2px solid #3c5263;
+  box-shadow: -15px 15px 30px rgba(0,0,0,0.2);
+  border: 2px solid var(--border-color);
 }
 .conference-table-3d::before {
   content: '';
@@ -1620,7 +1620,7 @@ textarea.form-control {
   left: -2px;
   width: calc(100% + 4px);
   height: 15px;
-  background: #1d2830;
+  background: var(--bg-secondary);
   transform-origin: top;
   transform: rotateX(-90deg);
   border-radius: 0 0 12px 12px;
@@ -1630,11 +1630,11 @@ textarea.form-control {
   position: absolute;
   width: 90px;
   height: 60px;
-  background: #252b33;
-  border: 1px solid #3c4854;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   transform: translate(-50%, -50%) translateZ(15px);
-  box-shadow: -8px 8px 15px rgba(0,0,0,0.5);
+  box-shadow: -8px 8px 15px rgba(0,0,0,0.2);
 }
 .desk-3d::before {
   content: '';
@@ -1643,7 +1643,7 @@ textarea.form-control {
   left: -1px;
   width: calc(100% + 2px);
   height: 10px;
-  background: #15181d;
+  background: var(--bg-tertiary);
   transform-origin: top;
   transform: rotateX(-90deg);
 }
@@ -1680,15 +1680,15 @@ textarea.form-control {
 }
 
 .agent-nametag {
-  background: rgba(10, 15, 20, 0.85);
+  background: var(--bg-secondary);
   backdrop-filter: blur(4px);
-  color: #e2e8f0;
+  color: var(--text-primary);
   padding: 4px 10px;
   border-radius: 6px;
   font-size: 10.5px;
   font-weight: 600;
   white-space: nowrap;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1707,10 +1707,8 @@ textarea.form-control {
   top: 20px;
   bottom: 20px;
   width: 380px;
-  background: rgba(18, 20, 28, 0.7);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: var(--border-radius-xl);
   padding: 0;
   display: flex;
@@ -1722,8 +1720,8 @@ textarea.form-control {
 
 .hq-sidebar-header {
   padding: 24px 24px 18px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .hq-sidebar-title {
@@ -1752,11 +1750,11 @@ textarea.form-control {
   bottom: 30px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(15, 20, 25, 0.9);
+  background: var(--bg-secondary);
   backdrop-filter: blur(10px);
   padding: 10px 10px;
   border-radius: 30px;
-  border: 1px solid #4a5568;
+  border: 1px solid var(--border-color);
   z-index: 100;
   display: flex;
   gap: 10px;
@@ -1766,7 +1764,7 @@ textarea.form-control {
 .meeting-btn {
   background: transparent;
   border: none;
-  color: #a0aec0;
+  color: var(--text-secondary);
   padding: 8px 16px;
   border-radius: 20px;
   font-size: 12px;
@@ -1801,7 +1799,6 @@ textarea.form-control {
   transition: all 0.2s ease;
 }
 
-/* Chat styles specific to HQ */
 .hq-chat-msg {
   padding: 14px 18px;
   border-radius: var(--border-radius-lg);
@@ -1809,29 +1806,26 @@ textarea.form-control {
   line-height: 1.6;
   margin-bottom: 16px;
   border: 1px solid transparent;
-  backdrop-filter: blur(8px);
   max-width: 90%;
   animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 .hq-chat-msg.user {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(6, 182, 212, 0.15));
-  border-color: rgba(139, 92, 246, 0.3);
+  background: var(--accent-bg);
+  border-color: var(--border-color);
   color: var(--text-primary);
   align-self: flex-end;
   border-bottom-right-radius: 4px;
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.05);
 }
 .hq-chat-msg.assistant {
-  background: rgba(26, 28, 40, 0.6);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
   color: var(--text-primary);
   align-self: flex-start;
   border-bottom-left-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 .hq-chat-msg.team {
-  background: rgba(16, 185, 129, 0.1);
-  border-color: rgba(6, 182, 212, 0.3);
+  background: var(--success-light);
+  border-color: var(--success-color);
   margin-right: auto;
   align-self: flex-start;
 }
