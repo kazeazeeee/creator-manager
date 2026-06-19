@@ -56,12 +56,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
   
-  /* Latar belakang animasi halus untuk keseluruhan aplikasi */
-  background-image: 
-    radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.08), transparent 30%),
-    radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.08), transparent 30%),
-    radial-gradient(circle at 50% 50%, rgba(10, 11, 16, 1) 0%, rgba(10, 11, 16, 1) 100%);
-  background-attachment: fixed;
+  /* Latar belakang dinamis mengikuti tema */
+  background-color: var(--bg-primary);
+  background-image: none; /* Removed hardcoded dark gradient */
+  transition: background-color var(--transition-speed);
 }
 
 /* Base Fade-In-Up Animation */
@@ -125,12 +123,9 @@ button, input, textarea, select {
 /* Sidebar Styling */
 .sidebar {
   width: var(--sidebar-width);
-  background: rgba(18, 20, 28, 0.6);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -140,7 +135,7 @@ button, input, textarea, select {
   border-radius: var(--border-radius-xl);
   z-index: 100;
   padding: 24px;
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease, background-color var(--transition-speed);
 }
 
 .sidebar-brand {
@@ -481,10 +476,8 @@ textarea.form-control {
 .pipeline-column {
   flex: 1 1 0;
   min-width: 260px;
-  background: rgba(18, 20, 28, 0.4);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: var(--border-radius-xl);
   padding: 16px;
   display: flex;
@@ -498,7 +491,7 @@ textarea.form-control {
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .column-title {
@@ -529,8 +522,8 @@ textarea.form-control {
 }
 
 .pipeline-card {
-  background: rgba(26, 28, 40, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
   padding: 14px 16px;
   cursor: grab;
@@ -539,60 +532,61 @@ textarea.form-control {
 
 .pipeline-card:hover {
   border-color: var(--accent-color);
-  background: rgba(26, 28, 40, 0.9);
+  background: var(--bg-secondary);
   box-shadow: 0 4px 16px rgba(139, 92, 246, 0.15);
   transform: translateY(-2px);
 }
 
 .pipeline-card.deadline-warning {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.06) 100%);
-  border-color: rgba(245, 158, 11, 0.5);
-  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.1);
+  background: var(--warning-light);
+  border-color: var(--warning-color);
+  box-shadow: 0 0 0 1px var(--warning-light);
 }
 
 .pipeline-card.deadline-warning:hover {
-  border-color: rgba(245, 158, 11, 0.7);
+  border-color: var(--warning-color);
 }
 
 .pipeline-card.deadline-warning .card-due-date {
-  color: #f59e0b;
+  color: var(--warning-color);
   font-weight: 600;
 }
 
 .pipeline-card.deadline-today {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(239, 68, 68, 0.06) 100%);
-  border-color: rgba(239, 68, 68, 0.55);
-  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.1);
+  background: var(--danger-light);
+  border-color: var(--danger-color);
+  box-shadow: 0 0 0 1px var(--danger-light);
 }
 
 .pipeline-card.deadline-today:hover {
-  border-color: rgba(239, 68, 68, 0.8);
+  border-color: var(--danger-color);
 }
 
 .pipeline-card.deadline-today .card-due-date {
-  color: #ef4444;
+  color: var(--danger-color);
   font-weight: 700;
 }
 
 .pipeline-card.deadline-overdue {
-  background: linear-gradient(135deg, rgba(185, 28, 28, 0.22) 0%, rgba(185, 28, 28, 0.08) 100%);
-  border-color: rgba(185, 28, 28, 0.6);
-  box-shadow: 0 0 0 1px rgba(185, 28, 28, 0.12);
+  background: var(--danger-light);
+  border-color: var(--danger-color);
+  box-shadow: 0 0 0 1px var(--danger-light);
 }
 
 .pipeline-card.deadline-overdue:hover {
-  border-color: rgba(185, 28, 28, 0.85);
+  border-color: var(--danger-color);
 }
 
 .pipeline-card.deadline-overdue .card-due-date {
-  color: #b91c1c;
+  color: var(--danger-color);
   font-weight: 700;
 }
 
 .pipeline-card.status-published {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.16) 0%, rgba(16, 185, 129, 0.05) 100%);
-  border-color: rgba(16, 185, 129, 0.45);
-  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.08);
+  background: var(--success-light);
+  border-color: var(--success-color);
+  box-shadow: 0 0 0 1px var(--success-light);
+
 }
 
 .pipeline-card.status-published:hover {
@@ -790,9 +784,9 @@ textarea.form-control {
 .invoice-table-container {
   overflow-x: auto;
   margin-top: 16px;
-  background: rgba(18, 20, 28, 0.4);
+  background: var(--bg-secondary);
   border-radius: var(--border-radius-lg);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
 }
 
 .invoice-table {
@@ -803,7 +797,7 @@ textarea.form-control {
 
 .invoice-table th, .invoice-table td {
   padding: 14px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .invoice-table th {
@@ -812,7 +806,7 @@ textarea.form-control {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-tertiary);
 }
 
 .invoice-table tbody tr {
@@ -820,7 +814,7 @@ textarea.form-control {
 }
 
 .invoice-table tbody tr:hover {
-  background-color: rgba(139, 92, 246, 0.05);
+  background-color: var(--accent-light);
 }
 
 /* Page transition animation */
