@@ -242,7 +242,8 @@ button, input, textarea, select {
 }
 
 .main-content.wide-layout {
-  max-width: 1400px;
+  max-width: 100%;
+  padding: 32px 40px; /* Reduce padding to give Kanban/Calendar more horizontal room */
 }
 
 /* Header inside main content */
@@ -475,7 +476,7 @@ textarea.form-control {
 
 .pipeline-column {
   flex: 1 1 0;
-  min-width: 260px;
+  min-width: 210px; /* Reduced from 260px so 5 columns can fit comfortably on a 1366px screen without horizontal scrolling */
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-xl);
