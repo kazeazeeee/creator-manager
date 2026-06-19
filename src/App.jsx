@@ -13,6 +13,7 @@ import MediaKit from './pages/MediaKit';
 import Analytics from './pages/Analytics';
 import AIPortal from './pages/AIPortal';
 import Conversation from './pages/Conversation';
+import Note from './pages/Note';
 
 import { 
   apiGetProfile, 
@@ -438,6 +439,8 @@ function App() {
         return <MediaKit profile={profile} setProfile={setProfile} />;
       case 'analytics':
         return <Analytics pipelineTasks={pipelineTasks} setPipelineTasks={setPipelineTasks} profile={profile} setProfile={setProfile} />;
+      case 'note':
+        return <Note />;
       case 'settings':
         return (
           <Settings 
@@ -473,7 +476,7 @@ function App() {
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} profile={profile} />
 
       {/* Main Content Area */}
-      <main className={`main-content animate-fade-in-up ${['pipeline', 'calendar', 'conversation', 'analytics', 'toolkit'].includes(activeTab) ? 'wide-layout' : ''}`} key={activeTab}>
+      <main className={`main-content animate-fade-in-up ${['pipeline', 'calendar', 'conversation', 'analytics', 'toolkit', 'note'].includes(activeTab) ? 'wide-layout' : ''}`} key={activeTab}>
         {renderPage()}
       </main>
 

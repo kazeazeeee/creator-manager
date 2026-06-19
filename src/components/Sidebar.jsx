@@ -8,7 +8,8 @@ import {
   Settings,
   Image,
   BarChart3,
-  Users
+  Users,
+  FileEdit
 } from 'lucide-react';
 
 const Sidebar = ({ activeTab, setActiveTab, profile }) => {
@@ -20,6 +21,7 @@ const Sidebar = ({ activeTab, setActiveTab, profile }) => {
     { id: 'toolkit', label: 'Perangkat Kreator', icon: Sparkles },
     { id: 'mediakit', label: 'Media Kit PDF', icon: Image },
     { id: 'analytics', label: 'Analitik Performa', icon: BarChart3 },
+    { id: 'note', label: 'Note', icon: FileEdit },
     { id: 'invoices', label: 'Invoice & Bayar', icon: FileText },
     { id: 'calendar', label: 'Kalender', icon: Calendar },
     { id: 'settings', label: 'Setelan', icon: Settings },
