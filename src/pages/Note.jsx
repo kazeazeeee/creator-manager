@@ -26,6 +26,22 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
     handleInput();
   };
 
+  const handleClearFormatting = () => {
+    // 1. Remove format on any selected text
+    document.execCommand('removeFormat');
+    // 2. Turn off active formatting toggles if the user hasn't selected text
+    const formats = ['bold', 'italic', 'underline', 'strikeThrough'];
+    formats.forEach(f => {
+      try {
+        if (document.queryCommandState(f)) {
+          document.execCommand(f, false, null);
+        }
+      } catch (e) {} // Ignore unsupported commands
+    });
+    editorRef.current.focus();
+    handleInput();
+  };
+
   const btnStyle = {
     background: 'transparent',
     border: '1px solid var(--border-color)',
@@ -52,7 +68,7 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
         <div style={{ width: '1px', backgroundColor: 'var(--border-color)', margin: '0 4px' }}></div>
         <button onClick={() => executeCommand('formatBlock', 'H1')} style={btnStyle} title="Heading 1" className="editor-btn"><strong style={{fontSize:'14px'}}>H1</strong></button>
         <button onClick={() => executeCommand('formatBlock', 'H2')} style={btnStyle} title="Heading 2" className="editor-btn"><strong style={{fontSize:'14px'}}>H2</strong></button>
-        <button onClick={() => executeCommand('removeFormat')} style={btnStyle} title="Clear Formatting" className="editor-btn">Clear</button>
+        <button onClick={handleClearFormatting} style={btnStyle} title="Clear Formatting" className="editor-btn">Clear</button>
       </div>
       <div
         ref={editorRef}

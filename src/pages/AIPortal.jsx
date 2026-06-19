@@ -1259,52 +1259,60 @@ const AIPortal = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEvent })
   };
 
   return (
-    <div className="hq-container">
-      {/* 3D Isometric View */}
-      <div className="isometric-room">
-        <div className="office-floor"></div>
-        <div className="office-wall-left"></div>
-        <div className="office-wall-top"></div>
+    <div className="hq-container" style={{ alignItems: 'flex-start', padding: '40px', overflowY: 'auto' }}>
+      
+      <div style={{ width: '100%', maxWidth: '900px', margin: activeAgent || isMeeting ? '0' : '0 auto', transition: 'all 0.3s' }}>
+        <div style={{ marginBottom: '32px' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '8px' }}>Pusat Asisten AI</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Pilih agen spesialis untuk membantu pekerjaan Anda hari ini.</p>
+        </div>
         
-        {/* Central Conference Table */}
-        <div className="conference-table-3d"></div>
-
-        {/* Render Agents and Desks */}
-        {AGENTS.map((agent, idx) => {
-          const pos = getAgentPosition(idx, AGENTS.length, isMeeting);
-          const AgentIcon = agent.icon;
-          return (
-            <React.Fragment key={agent.id}>
-              {/* Desk stays at original position */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+          {AGENTS.map((agent) => {
+            const AgentIcon = agent.icon;
+            const isActive = activeAgent?.id === agent.id;
+            return (
               <div 
-                className="desk-3d" 
-                style={getAgentPosition(idx, AGENTS.length, false)}
-              ></div>
-              
-              {/* Agent moves */}
-              <div 
-                className="agent-3d" 
-                style={pos}
+                key={agent.id}
                 onClick={() => {
                   if (isMeeting) setIsMeeting(false);
                   handleOpenAgent(agent);
                 }}
+                className="card"
+                style={{ 
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '16px', 
+                  padding: '20px',
+                  backgroundColor: isActive ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
+                  border: isActive ? `1px solid ${agent.color}` : '1px solid var(--border-color)',
+                  boxShadow: isActive ? `0 0 0 1px ${agent.color}33` : '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                  transition: 'all 0.2s ease',
+                  transform: isActive ? 'translateY(-2px)' : 'none'
+                }}
               >
-                <div className="agent-avatar" style={{ backgroundColor: agent.color }}>
-                  <AgentIcon size={20} />
+                <div style={{ position: 'relative' }}>
+                  <div style={{ width: '50px', height: '50px', borderRadius: '12px', backgroundColor: agent.color, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+                    <AgentIcon size={24} />
+                  </div>
+                  {/* Online Status Indicator */}
+                  <div style={{ position: 'absolute', bottom: '-4px', right: '-4px', width: '16px', height: '16px', backgroundColor: '#10B981', border: '3px solid var(--bg-secondary)', borderRadius: '50%' }} title="Online"></div>
                 </div>
-                <div className="agent-nametag">
-                  <div className="dot" style={{ backgroundColor: agent.color }}></div>
-                  {agent.name}
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ fontSize: '15px', fontWeight: '600', margin: '0 0 4px 0', color: 'var(--text-primary)' }}>{agent.name}</h3>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    {agent.role}
+                  </div>
                 </div>
               </div>
-            </React.Fragment>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {/* Meeting Controls (Bottom Center) */}
-      <div className="meeting-control">
+      <div className="meeting-control" style={{ position: 'fixed', bottom: '30px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000 }}>
         <button 
           type="button"
           className={`meeting-btn ${!isMeeting ? 'active' : ''}`} 
@@ -1323,7 +1331,7 @@ const AIPortal = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEvent })
 
       {/* Right Sidebar (Headquarters / Active Agent / Meeting) */}
       {(activeAgent || isMeeting) && (
-        <div className="hq-sidebar">
+        <div className="hq-sidebar" style={{ position: 'fixed', right: '20px', top: '20px', bottom: '20px', zIndex: 1000, boxShadow: '-10px 0 40px rgba(0,0,0,0.1)' }}>
           <div className="hq-sidebar-header">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
