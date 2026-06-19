@@ -440,7 +440,7 @@ function App() {
       case 'analytics':
         return <Analytics pipelineTasks={pipelineTasks} setPipelineTasks={setPipelineTasks} profile={profile} setProfile={setProfile} />;
       case 'note':
-        return <Note />;
+        return <Note addPipelineTask={handleAddPipelineTask} />;
       case 'settings':
         return (
           <Settings 
