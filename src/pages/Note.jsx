@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, Sparkles, CheckCircle, FileEdit, Trash2, RefreshCw, Plus, FileText, Send, Clock, AlignLeft } from 'lucide-react';
+import { Copy, Sparkles, CheckCircle, FileEdit, Trash2, RefreshCw, Plus, FileText, Send, Clock, AlignLeft, ChevronRight } from 'lucide-react';
 import { apiAnalyzeScript } from '../utils/api';
 
 const Note = ({ addPipelineTask }) => {
@@ -139,7 +139,7 @@ const Note = ({ addPipelineTask }) => {
     return content.trim() ? content.trim().split(/\s+/).length : 0;
   };
   const wordCount = getWordCount();
-  const readingTimeSecs = Math.ceil((wordCount / 130) * 60); // Asumsi 130 kata per menit untuk video bicara santai
+  const readingTimeSecs = Math.ceil((wordCount / 130) * 60); // Asumsi 130 kata per menit
   
   const formatDuration = (secs) => {
     if (secs < 60) return `${secs} dtk`;
@@ -166,7 +166,6 @@ const Note = ({ addPipelineTask }) => {
   const handleSaveToPipeline = () => {
     if (!content.trim()) return;
     
-    // Add to pipeline via props if available
     if (typeof addPipelineTask === 'function') {
       addPipelineTask({
         id: `task-${Date.now()}`,
@@ -174,7 +173,7 @@ const Note = ({ addPipelineTask }) => {
         brand: 'Personal Content',
         platform: 'TikTok/Reels',
         status: 'idea',
-        dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10), // + 3 Days
+        dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10),
         deliverables: '1x Video Pendek',
         notes: `HASIL SKRIP DARI NOTE:\n\n${content}`
       });
@@ -232,23 +231,22 @@ ${res.viralImprovements && res.viralImprovements.length > 0 ? res.viralImproveme
       
       if (isBullet) {
         return (
-          <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '6px', paddingLeft: '8px', alignItems: 'start' }}>
-            <span style={{ color: 'var(--accent-color)', fontSize: '12px', marginTop: '2px' }}>•</span>
-            <span style={{ fontSize: '13.5px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>{cleanedLine}</span>
+          <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px', paddingLeft: '8px', alignItems: 'start' }}>
+            <span style={{ color: 'var(--accent-color)', fontSize: '14px', marginTop: '2px' }}>•</span>
+            <span style={{ fontSize: '15px', color: 'var(--text-secondary)', lineHeight: '1.6' }}>{cleanedLine}</span>
           </div>
         );
       }
       
-      // Simple bold parsing
       const parts = trimmed.split(/(\*\*.*?\*\*)/g).map((part, i) => {
         if (part.startsWith('**') && part.endsWith('**')) {
-          return <strong key={i} style={{ color: 'var(--text-primary)' }}>{part.slice(2, -2)}</strong>;
+          return <strong key={i} style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{part.slice(2, -2)}</strong>;
         }
         return part;
       });
 
       return (
-        <p key={idx} style={{ marginBottom: '10px', fontSize: '13.5px', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
+        <p key={idx} style={{ marginBottom: '12px', fontSize: '15px', color: 'var(--text-secondary)', lineHeight: '1.7' }}>
           {parts}
         </p>
       );
@@ -256,76 +254,72 @@ ${res.viralImprovements && res.viralImprovements.length > 0 ? res.viralImproveme
   };
 
   return (
-    <div>
-      <div className="content-header">
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div className="content-header" style={{ paddingBottom: '16px' }}>
         <div className="content-title">
           <h1>Note & Draft</h1>
-          <p>Kelola semua ide skrip dan catatan Anda dalam satu tempat.</p>
+          <p>Kelola ide skrip Anda dengan antarmuka yang bersih dan bebas gangguan.</p>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '24px', alignItems: 'start' }}>
+      <div style={{ display: 'flex', gap: '20px', height: 'calc(100vh - 140px)', alignItems: 'stretch' }}>
         
         {/* --- SIDEBAR LIST CATATAN --- */}
-        <div className="card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 160px)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '14px', margin: 0, color: 'var(--text-primary)' }}>Daftar Catatan</h3>
-            <button onClick={createNewNote} className="btn btn-primary" style={{ padding: '4px 8px', borderRadius: '4px' }} title="Catatan Baru">
+        <div className="card" style={{ width: '280px', flexShrink: 0, padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--bg-tertiary)' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: '600', margin: 0, color: 'var(--text-primary)' }}>Daftar Catatan</h3>
+            <button onClick={createNewNote} className="btn btn-primary" style={{ padding: '6px', borderRadius: '6px' }} title="Catatan Baru">
               <Plus size={16} />
             </button>
           </div>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', flexGrow: 1, paddingRight: '4px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', flexGrow: 1, padding: '12px' }}>
             {notes.map(note => (
               <div 
                 key={note.id}
                 onClick={() => switchNote(note.id)}
                 style={{ 
-                  padding: '12px', 
-                  borderRadius: 'var(--border-radius-md)', 
+                  padding: '12px 16px', 
+                  borderRadius: '8px', 
                   cursor: 'pointer',
                   backgroundColor: activeNoteId === note.id ? 'var(--bg-tertiary)' : 'transparent',
-                  border: activeNoteId === note.id ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
+                  border: activeNoteId === note.id ? '1px solid var(--accent-color)' : '1px solid transparent',
+                  marginBottom: '8px',
                   transition: 'all 0.2s ease',
                   position: 'relative',
-                  group: 'note-item'
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px'
                 }}
               >
-                <h4 style={{ fontSize: '13px', margin: '0 0 4px 0', color: activeNoteId === note.id ? 'var(--accent-color)' : 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '20px' }}>
-                  {note.title || 'Tanpa Judul'}
-                </h4>
-                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {note.content ? note.content.substring(0, 30) : 'Kosong...'}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '500', margin: 0, color: activeNoteId === note.id ? 'var(--accent-color)' : 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '24px' }}>
+                    {note.title || 'Tanpa Judul'}
+                  </h4>
+                  {activeNoteId === note.id && (
+                    <button 
+                      onClick={(e) => deleteNote(note.id, e)}
+                      style={{ position: 'absolute', right: '12px', background: 'transparent', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', padding: '4px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      title="Hapus"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {note.content ? note.content.substring(0, 40) : 'Kosong...'}
                 </p>
-                
-                {/* Delete button appears on hover/always if active */}
-                <button 
-                  onClick={(e) => deleteNote(note.id, e)}
-                  style={{ 
-                    position: 'absolute', 
-                    top: '10px', 
-                    right: '10px', 
-                    background: 'transparent', 
-                    border: 'none', 
-                    color: 'var(--danger-color)', 
-                    cursor: 'pointer',
-                    opacity: activeNoteId === note.id ? 1 : 0.4
-                  }}
-                  title="Hapus"
-                >
-                  <Trash2 size={14} />
-                </button>
               </div>
             ))}
           </div>
         </div>
 
         {/* --- MAIN EDITOR AREA --- */}
-        <div style={{ display: 'grid', gridTemplateColumns: analysisResult ? '1fr 1fr' : '1fr', gap: '24px' }}>
+        <div className="card" style={{ flexGrow: 1, padding: 0, display: 'flex', flexDirection: 'row', overflow: 'hidden', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
           
-          <div className="card" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 160px)', padding: '0', overflow: 'hidden' }}>
+          <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minWidth: '400px' }}>
             {/* Editor Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
               <input 
                 type="text" 
                 value={title}
@@ -334,7 +328,7 @@ ${res.viralImprovements && res.viralImprovements.length > 0 ? res.viralImproveme
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  fontSize: '16px',
+                  fontSize: '18px',
                   fontWeight: '600',
                   color: 'var(--text-primary)',
                   outline: 'none',
@@ -342,99 +336,107 @@ ${res.viralImprovements && res.viralImprovements.length > 0 ? res.viralImproveme
                 }}
               />
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button className="btn btn-secondary" onClick={handleSaveToPipeline} style={{ padding: '6px 12px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  {savedToPipeline ? <CheckCircle size={13} style={{ color: 'var(--success-color)' }} /> : <Send size={13} />} 
-                  {savedToPipeline ? 'Tersimpan!' : 'Ke Pipeline'}
+                <button className="btn btn-secondary" onClick={handleSaveToPipeline} style={{ padding: '8px 14px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {savedToPipeline ? <CheckCircle size={14} style={{ color: 'var(--success-color)' }} /> : <Send size={14} />} 
+                  {savedToPipeline ? 'Tersimpan' : 'Ke Pipeline'}
                 </button>
-                <button className="btn btn-secondary" onClick={handleCopy} style={{ padding: '6px 12px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  {copied ? <CheckCircle size={13} style={{ color: 'var(--success-color)' }} /> : <Copy size={13} />} 
-                  {copied ? 'Tersalin!' : 'Salin'}
+                <button className="btn btn-secondary" onClick={handleCopy} style={{ padding: '8px 14px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {copied ? <CheckCircle size={14} style={{ color: 'var(--success-color)' }} /> : <Copy size={14} />} 
+                  {copied ? 'Tersalin' : 'Salin'}
                 </button>
-                <button className="btn btn-primary" onClick={handleAnalyze} disabled={analyzing || !content.trim()} style={{ padding: '6px 12px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Sparkles size={13} className={analyzing ? 'spin-animation' : ''} /> 
+                <button className="btn btn-primary" onClick={handleAnalyze} disabled={analyzing || !content.trim()} style={{ padding: '8px 14px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Sparkles size={14} className={analyzing ? 'spin-animation' : ''} /> 
                   {analyzing ? 'Menganalisis...' : 'Analisis AI'}
                 </button>
               </div>
             </div>
 
             {/* Editor Body */}
-            <textarea
-              value={content}
-              onChange={handleContentChange}
-              placeholder="Mulai ketik draft atau skrip video Anda di sini..."
-              style={{
-                flexGrow: 1,
-                width: '100%',
-                resize: 'none',
-                backgroundColor: 'transparent',
-                color: 'var(--text-primary)',
-                border: 'none',
-                padding: '20px',
-                fontSize: '14.5px',
-                lineHeight: '1.7',
-                fontFamily: 'var(--font-sans)',
-                outline: 'none'
-              }}
-            />
+            <div style={{ flexGrow: 1, position: 'relative', display: 'flex', flexDirection: 'column' }}>
+              <textarea
+                value={content}
+                onChange={handleContentChange}
+                placeholder="Mulai ketik draf skrip, kerangka ide, atau cerita Anda di sini..."
+                style={{
+                  flexGrow: 1,
+                  width: '100%',
+                  resize: 'none',
+                  backgroundColor: 'transparent',
+                  color: 'var(--text-primary)',
+                  border: 'none',
+                  padding: '24px',
+                  fontSize: '16px',
+                  lineHeight: '1.8',
+                  fontFamily: 'var(--font-sans)',
+                  outline: 'none'
+                }}
+              />
+              
+              {/* Error Overlay */}
+              {error && (
+                <div style={{ position: 'absolute', bottom: '20px', left: '24px', right: '24px', padding: '12px 16px', backgroundColor: 'var(--danger-light)', border: '1px solid var(--danger-color)', color: 'var(--danger-color)', borderRadius: '8px', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
+                  <span>{error}</span>
+                  <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', padding: '4px' }}>✕</button>
+                </div>
+              )}
+            </div>
             
             {/* Editor Status Bar */}
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
               alignItems: 'center', 
-              padding: '10px 20px', 
+              padding: '12px 24px', 
               borderTop: '1px solid var(--border-color)', 
               backgroundColor: 'var(--bg-tertiary)',
-              fontSize: '11px',
-              color: 'var(--text-secondary)'
+              fontSize: '12px',
+              color: 'var(--text-muted)'
             }}>
-              <div style={{ display: 'flex', gap: '16px' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <AlignLeft size={12} /> {wordCount} Kata
+              <div style={{ display: 'flex', gap: '24px' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <AlignLeft size={14} /> <strong style={{ color: 'var(--text-secondary)' }}>{wordCount}</strong> Kata
                 </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <FileText size={12} /> {content.length} Karakter
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <FileText size={14} /> <strong style={{ color: 'var(--text-secondary)' }}>{content.length}</strong> Karakter
                 </span>
               </div>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Clock size={12} /> Estimasi Video: {formatDuration(readingTimeSecs)}
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Clock size={14} /> Estimasi Durasi: <strong style={{ color: 'var(--text-secondary)' }}>{formatDuration(readingTimeSecs)}</strong>
               </span>
             </div>
-
-            {/* Error Overlay */}
-            {error && (
-              <div style={{ position: 'absolute', bottom: '50px', left: '20px', right: '20px', padding: '10px', backgroundColor: 'var(--danger-light)', color: 'var(--danger-color)', borderRadius: '6px', fontSize: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-                {error}
-                <button onClick={() => setError(null)} style={{ float: 'right', background: 'none', border: 'none', color: 'var(--danger-color)', cursor: 'pointer' }}>✕</button>
-              </div>
-            )}
           </div>
 
-          {/* --- ANALYSIS RESULT AREA --- */}
+          {/* --- ANALYSIS RESULT AREA (Slide-in Panel) --- */}
           {(analysisResult || analyzing) && (
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 160px)', padding: '20px', position: 'relative' }}>
+            <div style={{ 
+              width: '450px', 
+              flexShrink: 0,
+              borderLeft: '1px solid var(--border-color)', 
+              backgroundColor: 'var(--bg-tertiary)', 
+              display: 'flex', 
+              flexDirection: 'column',
+              position: 'relative',
+              animation: 'slideIn 0.3s ease'
+            }}>
               {analyzing && (
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-secondary)', backdropFilter: 'blur(8px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 50, borderRadius: 'var(--border-radius-xl)', opacity: 0.95 }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-secondary)', backdropFilter: 'blur(4px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 10, opacity: 0.95 }}>
                   <RefreshCw size={40} className="spin-animation" style={{ color: 'var(--accent-color)', marginBottom: '16px' }} />
-                  <h3 style={{ color: 'var(--text-primary)', margin: 0, fontSize: '16px' }}>AI Sedang Menganalisis...</h3>
-                  <p style={{ color: 'var(--text-secondary)', marginTop: '8px', fontSize: '13px' }}>Mohon tunggu sebentar, memproses naskah Anda.</p>
+                  <h3 style={{ color: 'var(--text-primary)', margin: 0, fontSize: '16px', fontWeight: '600' }}>Membedah Skrip Anda...</h3>
+                  <p style={{ color: 'var(--text-muted)', marginTop: '8px', fontSize: '13px', textAlign: 'center', padding: '0 20px' }}>AI sedang mencari celah untuk membuat skrip ini lebih viral dan menarik.</p>
                 </div>
               )}
               
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', margin: 0, color: 'var(--accent-color)' }}>
-                  <Sparkles size={16} /> Hasil Analisis AI
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '600', margin: 0, color: 'var(--accent-color)' }}>
+                  <Sparkles size={16} /> Analisis AI
                 </h3>
-                <button className="btn btn-secondary" onClick={() => setAnalysisResult(null)} style={{ padding: '4px 8px', fontSize: '11px' }}>
+                <button className="btn btn-secondary" onClick={() => setAnalysisResult(null)} style={{ padding: '6px 10px', fontSize: '12px' }} title="Tutup Analisis">
                   Tutup
                 </button>
               </div>
               
               <div style={{ 
-                backgroundColor: 'var(--bg-tertiary)',
-                padding: '20px',
-                borderRadius: 'var(--border-radius-md)',
-                border: '1px solid var(--border-color)',
+                padding: '24px 20px',
                 flexGrow: 1,
                 overflowY: 'auto'
               }}>
