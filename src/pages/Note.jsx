@@ -44,10 +44,23 @@ const Note = () => {
     setError(null);
     try {
       const res = await apiAnalyzeScript(content);
-      if (res && res.analysis) {
-        setAnalysisResult(res.analysis);
+      if (res && res.improvedScript) {
+        const formattedResult = `
+**NASKAH YANG DIPERBAIKI (IMPROVED)**
+${res.improvedScript}
+
+**ALTERNATIF HOOK VIRAL**
+${res.viralHookSuggestion || 'Tidak ada saran.'}
+
+**PERBAIKAN TYPO & TATA BAHASA**
+${res.typosFixed && res.typosFixed.length > 0 ? res.typosFixed.map(t => `- **${t.original}** -> **${t.corrected}** (${t.reason})`).join('\n') : '- Tidak ada typo yang ditemukan.'}
+
+**SARAN UNTUK VIRALITAS & PACING**
+${res.viralImprovements && res.viralImprovements.length > 0 ? res.viralImprovements.map(v => `- ${v}`).join('\n') : '- Tidak ada saran spesifik.'}
+        `.trim();
+        setAnalysisResult(formattedResult);
       } else {
-        throw new Error('Gagal mendapatkan analisis.');
+        throw new Error('Gagal mendapatkan analisis atau format response tidak sesuai.');
       }
     } catch (err) {
       console.error(err);
@@ -155,27 +168,37 @@ const Note = () => {
         </div>
 
         {/* Analysis Result Area */}
-        {analysisResult && (
+        {(analysisResult || analyzing) && (
           <div className="card" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 160px)', padding: '20px', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', margin: 0, color: 'var(--accent-color)' }}>
-                <Sparkles size={16} /> Hasil Analisis AI
-              </h3>
-              <button className="btn btn-secondary" onClick={() => setAnalysisResult(null)} style={{ padding: '4px 8px', fontSize: '11px' }}>
-                Tutup
-              </button>
-            </div>
-            
-            <div style={{ 
-              backgroundColor: 'var(--bg-tertiary)',
-              padding: '20px',
-              borderRadius: 'var(--border-radius-md)',
-              border: '1px solid var(--border-color)',
-              flexGrow: 1,
-              overflowY: 'auto'
-            }}>
-              {formatText(analysisResult)}
-            </div>
+            {analyzing ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-secondary)' }}>
+                <RefreshCw size={40} className="spin-animation" style={{ color: 'var(--accent-color)', marginBottom: '16px' }} />
+                <h3 style={{ marginBottom: '8px', color: 'var(--text-primary)' }}>AI Sedang Menganalisis...</h3>
+                <p>Harap tunggu sebentar, AI sedang memproses skrip Anda.</p>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', margin: 0, color: 'var(--accent-color)' }}>
+                    <Sparkles size={16} /> Hasil Analisis AI
+                  </h3>
+                  <button className="btn btn-secondary" onClick={() => setAnalysisResult(null)} style={{ padding: '4px 8px', fontSize: '11px' }}>
+                    Tutup
+                  </button>
+                </div>
+                
+                <div style={{ 
+                  backgroundColor: 'var(--bg-tertiary)',
+                  padding: '20px',
+                  borderRadius: 'var(--border-radius-md)',
+                  border: '1px solid var(--border-color)',
+                  flexGrow: 1,
+                  overflowY: 'auto'
+                }}>
+                  {formatText(analysisResult)}
+                </div>
+              </>
+            )}
           </div>
         )}
 

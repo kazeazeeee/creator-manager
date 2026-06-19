@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, Users, Heart, MessageSquare, Eye, Save, DollarSign, RefreshCw, Sparkles, Plus, Trash2 } from 'lucide-react';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { formatCurrency } from '../utils/helpers';
 import { apiGetTasks, apiUpdateTask, apiSyncRecentPosts, apiGetAnalytics, apiSaveAnalytics, apiSaveProfile } from '../utils/api';
 
@@ -374,135 +375,50 @@ const Analytics = ({ pipelineTasks = [], setPipelineTasks, profile = {}, setProf
           </div>
         </div>
 
-        {/* SVG Chart Rendering */}
+        {/* Recharts Rendering */}
         {chartData.length > 0 ? (
-          <div style={{ position: 'relative', width: '100%', overflowX: 'auto', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--border-radius-md)', padding: '16px 8px 8px 8px', border: '1px solid var(--border-color)' }}>
-            <svg viewBox="0 0 800 240" width="100%" height="220" style={{ display: 'block', minWidth: '700px' }}>
-              <defs>
-                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--text-primary)" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="var(--text-primary)" stopOpacity="0.00" />
-                </linearGradient>
-              </defs>
-
-              {/* Y-Axis Grid Lines & Labels */}
-              {[0, 0.25, 0.5, 0.75, 1].map((pct, idx) => {
-                const y = 20 + 175 - pct * 175;
-                const val = maxVal * pct;
-                return (
-                  <g key={idx}>
-                    {/* Grid line */}
-                    <line x1="70" y1={y} x2="770" y2={y} stroke="var(--border-color)" strokeWidth={1} strokeDasharray="4 6" opacity={0.4} />
-                    {/* Y label */}
-                    <text x="60" y={y + 4} textAnchor="end" fontSize="10px" fill="var(--text-secondary)" fontFamily="monospace">
-                      {formatYLabel(val)}
-                    </text>
-                  </g>
-                );
-              })}
-
-              {/* Area path with gradient */}
-              {areaPath && (
-                <path d={areaPath} fill="url(#chartGradient)" />
-              )}
-
-              {/* Line path */}
-              {linePath && (
-                <path
-                  d={linePath}
-                  fill="none"
-                  stroke="var(--text-primary)"
-                  strokeWidth={2.5}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  style={{ filter: 'drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.3))' }}
+          <div style={{ width: '100%', height: '300px', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--border-radius-md)', padding: '20px 10px 10px 0', border: '1px solid var(--border-color)', marginTop: '16px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorMetric" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--accent-color)" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="var(--accent-color)" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis 
+                  dataKey="brand" 
+                  stroke="var(--text-secondary)" 
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(val) => val.length > 12 ? val.substring(0, 10) + '..' : val}
                 />
-              )}
-
-              {/* Data points & hover overlays */}
-              {points.map((p, idx) => {
-                const isHovered = hoveredIndex === idx;
-                return (
-                  <g key={idx}>
-                    {/* Vertical guideline on hover */}
-                    {isHovered && (
-                      <line x1={p.x} y1="20" x2={p.x} y2="195" stroke="var(--accent-color)" strokeWidth={1} strokeDasharray="3 3" opacity={0.6} />
-                    )}
-
-                    {/* Point circle */}
-                    <circle
-                      cx={p.x}
-                      cy={p.y}
-                      r={isHovered ? 6 : 4}
-                      fill={isHovered ? 'var(--accent-color)' : 'var(--text-primary)'}
-                      stroke="var(--bg-secondary)"
-                      strokeWidth={2}
-                      style={{ transition: 'all 0.15s ease' }}
-                    />
-
-                    {/* X-Axis Labels */}
-                    <text x={p.x} y="218" textAnchor="middle" fontSize="10px" fill="var(--text-secondary)" fontWeight="500">
-                      {p.label.length > 12 ? p.label.substring(0, 10) + '..' : p.label}
-                    </text>
-
-                    {/* Interactive hover overlay */}
-                    <rect
-                      x={p.x - 30}
-                      y="10"
-                      width="60"
-                      height="200"
-                      fill="transparent"
-                      style={{ cursor: 'pointer' }}
-                      onMouseEnter={() => setHoveredIndex(idx)}
-                      onMouseLeave={() => setHoveredIndex(null)}
-                    />
-                  </g>
-                );
-              })}
-
-              {/* Hover Tooltip Box */}
-              {hoveredIndex !== null && points[hoveredIndex] && (
-                <g style={{ pointerEvents: 'none' }}>
-                  {/* Tooltip Background */}
-                  <rect
-                    x={Math.max(10, Math.min(points[hoveredIndex].x - 80, 800 - 170))}
-                    y={Math.max(5, points[hoveredIndex].y - 50)}
-                    width="160"
-                    height="42"
-                    rx={6}
-                    fill="var(--bg-secondary)"
-                    stroke="var(--border-color)"
-                    strokeWidth={1.5}
-                    style={{ filter: 'drop-shadow(0px 4px 10px rgba(0, 0, 0, 0.5))' }}
-                  />
-                  {/* Brand Label */}
-                  <text
-                    x={Math.max(10, Math.min(points[hoveredIndex].x - 80, 800 - 170)) + 80}
-                    y={Math.max(5, points[hoveredIndex].y - 50) + 16}
-                    textAnchor="middle"
-                    fontSize="10px"
-                    fill="var(--text-secondary)"
-                    fontWeight="600"
-                  >
-                    {points[hoveredIndex].label}
-                  </text>
-                  {/* Metric Value */}
-                  <text
-                    x={Math.max(10, Math.min(points[hoveredIndex].x - 80, 800 - 170)) + 80}
-                    y={Math.max(5, points[hoveredIndex].y - 50) + 32}
-                    textAnchor="middle"
-                    fontSize="12px"
-                    fill="var(--accent-color)"
-                    fontWeight="bold"
-                    fontFamily="monospace"
-                  >
-                    {chartMetric === 'views' 
-                      ? `${points[hoveredIndex].val.toLocaleString('id-ID')} Views` 
-                      : formatCurrency(points[hoveredIndex].val)}
-                  </text>
-                </g>
-              )}
-            </svg>
+                <YAxis 
+                  stroke="var(--text-secondary)" 
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(val) => formatYLabel(val)}
+                />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}
+                  itemStyle={{ color: 'var(--accent-color)', fontWeight: 'bold' }}
+                  labelStyle={{ color: 'var(--text-primary)', fontWeight: '600', marginBottom: '4px' }}
+                  formatter={(value) => [chartMetric === 'views' ? value.toLocaleString('id-ID') : formatCurrency(value), chartMetric === 'views' ? 'Tayangan' : 'Pendapatan']}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey={chartMetric} 
+                  stroke="var(--accent-color)" 
+                  strokeWidth={3}
+                  fillOpacity={1} 
+                  fill="url(#colorMetric)" 
+                  activeDot={{ r: 6, fill: 'var(--accent-color)', stroke: 'var(--bg-secondary)', strokeWidth: 2 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         ) : (
           <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--border-radius-md)', border: '1px solid var(--border-color)' }}>

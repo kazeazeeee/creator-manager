@@ -314,8 +314,15 @@ const ScriptAnalyzer = ({ apiKey, addPipelineTask, creatorProfile }) => {
         </div>
 
         {/* Results Card */}
-        {result && (
-          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        {(result || loading) && (
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative', minHeight: loading ? '300px' : 'auto' }}>
+            {loading && (
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-secondary)', backdropFilter: 'blur(8px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 50, borderRadius: 'var(--border-radius-xl)', opacity: 0.95 }}>
+                <RefreshCw size={40} className="spin-animation" style={{ color: 'var(--accent-color)', marginBottom: '16px' }} />
+                <h3 style={{ color: 'var(--text-primary)', margin: 0, fontSize: '16px' }}>Menganalisis Skrip...</h3>
+                <p style={{ color: 'var(--text-secondary)', marginTop: '8px', fontSize: '13px' }}>Mohon tunggu sebentar, AI sedang memproses.</p>
+              </div>
+            )}
             
             {/* Header section inside card */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
