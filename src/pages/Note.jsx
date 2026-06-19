@@ -66,6 +66,30 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
         <button onClick={() => executeCommand('insertOrderedList')} style={btnStyle} title="Numbered List" className="editor-btn"><ListOrdered size={16} /></button>
         <button onClick={() => executeCommand('insertUnorderedList')} style={btnStyle} title="Bullet List" className="editor-btn"><List size={16} /></button>
         <div style={{ width: '1px', backgroundColor: 'var(--border-color)', margin: '0 4px' }}></div>
+        <select
+          onChange={(e) => executeCommand('fontSize', e.target.value)}
+          style={{
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '4px',
+            padding: '4px 8px',
+            color: 'var(--text-primary)',
+            cursor: 'pointer',
+            outline: 'none',
+            fontSize: '13px'
+          }}
+          defaultValue="3"
+          title="Ukuran Font"
+        >
+          <option value="1">10px (Sangat Kecil)</option>
+          <option value="2">13px (Kecil)</option>
+          <option value="3">16px (Normal)</option>
+          <option value="4">18px (Besar)</option>
+          <option value="5">24px (Sangat Besar)</option>
+          <option value="6">32px (Raksasa)</option>
+          <option value="7">48px (Super)</option>
+        </select>
+        <div style={{ width: '1px', backgroundColor: 'var(--border-color)', margin: '0 4px' }}></div>
         <button onClick={() => executeCommand('formatBlock', 'H1')} style={btnStyle} title="Heading 1" className="editor-btn"><strong style={{fontSize:'14px'}}>H1</strong></button>
         <button onClick={() => executeCommand('formatBlock', 'H2')} style={btnStyle} title="Heading 2" className="editor-btn"><strong style={{fontSize:'14px'}}>H2</strong></button>
         <button onClick={handleClearFormatting} style={btnStyle} title="Clear Formatting" className="editor-btn">Clear</button>
