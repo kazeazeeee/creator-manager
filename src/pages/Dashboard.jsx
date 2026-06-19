@@ -213,111 +213,8 @@ const Dashboard = ({
     <div>
       <div className="content-header">
         <div className="content-title">
-          <h1>Ringkasan Dasbor</h1>
+          <h1>Dashboard</h1>
           <p>Pantau status finansial, jadwal, dan tenggat waktu konten Anda.</p>
-        </div>
-      </div>
-
-      {/* Morning Briefing Card */}
-      <div className="card" style={{ 
-        marginBottom: '24px', 
-        position: 'relative', 
-        overflow: 'hidden',
-        background: 'linear-gradient(135deg, rgba(24, 26, 31, 0.9) 0%, rgba(53, 90, 102, 0.2) 100%)',
-        border: '1.5px solid var(--border-color)',
-        padding: '20px'
-      }}>
-        <div style={{
-          position: 'absolute',
-          top: '-40px',
-          left: '-40px',
-          width: '120px',
-          height: '120px',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, transparent 70%)',
-          zIndex: 0,
-          pointerEvents: 'none'
-        }} />
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', position: 'relative', zIndex: 1 }}>
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', margin: 0, color: 'var(--text-primary)' }}>
-            <Coffee size={16} style={{ color: 'var(--accent-color)' }} /> Briefing Pagi Manajer
-          </h3>
-          <button 
-            className="btn btn-secondary" 
-            style={{ padding: '4px 10px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px' }}
-            onClick={loadBriefing}
-            disabled={loadingBriefing}
-          >
-            <RefreshCw size={11} className={loadingBriefing ? 'spin-animation' : ''} />
-            {loadingBriefing ? 'Memuat...' : 'Perbarui'}
-          </button>
-        </div>
-
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          {loadingBriefing ? (
-            <div style={{ padding: '12px 0', display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-secondary)' }}>
-              <RefreshCw className="spin-animation" size={13} style={{ color: 'var(--accent-color)' }} />
-              <span style={{ fontSize: '13px' }}>Manajer sedang merangkum status hari ini...</span>
-            </div>
-          ) : errorBriefing ? (
-            <div style={{ padding: '8px 12px', borderRadius: '4px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', fontSize: '12.5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>⚠️ {errorBriefing}</span>
-              <button className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: '10.5px', borderColor: 'rgba(239, 68, 68, 0.2)' }} onClick={loadBriefing}>Coba Lagi</button>
-            </div>
-          ) : briefingText ? (
-            <div style={{ 
-              fontSize: '13.5px', 
-              color: 'var(--text-secondary)', 
-              lineHeight: '1.6',
-              backgroundColor: 'rgba(17, 17, 17, 0.4)',
-              padding: '14px 16px',
-              borderRadius: 'var(--border-radius-sm)',
-              border: '1.5px solid var(--border-color)'
-            }}>
-              {formatText(briefingText)}
-            </div>
-          ) : (
-            <div style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Belum ada briefing hari ini.</div>
-          )}
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="dashboard-grid">
-        <div className="card stats-card">
-          <div className="stats-header">
-            <span>Pendapatan Cair</span>
-            <DollarSign size={16} className="text-success" style={{ color: 'var(--success-color)' }} />
-          </div>
-          <div className="stats-value">{formatCurrency(totalPaid)}</div>
-          <div className="stats-change up">
-            <TrendingUp size={12} />
-            <span>Invoice Lunas</span>
-          </div>
-        </div>
-
-        <div className="card stats-card">
-          <div className="stats-header">
-            <span>Tertunda & Telat</span>
-            <Clock size={16} className="text-warning" style={{ color: 'var(--warning-color)' }} />
-          </div>
-          <div className="stats-value">{formatCurrency(totalPending + totalOverdue)}</div>
-          <div className="stats-change down" style={{ color: totalOverdue > 0 ? 'var(--danger-color)' : 'var(--warning-color)' }}>
-            {totalOverdue > 0 ? <TrendingDown size={12} /> : <Clock size={12} />}
-            <span>{totalOverdue > 0 ? `${formatCurrency(totalOverdue)} Telat Bayar` : 'Menunggu pembayaran'}</span>
-          </div>
-        </div>
-
-        <div className="card stats-card">
-          <div className="stats-header">
-            <span>Proyek Aktif</span>
-            <CalendarIcon size={16} className="text-accent" style={{ color: 'var(--accent-color)' }} />
-          </div>
-          <div className="stats-value">{activeProjectsCount}</div>
-          <div className="stats-change up" style={{ color: 'var(--accent-color)' }}>
-            <span>Dalam Alur Kerja Konten</span>
-          </div>
         </div>
       </div>
 
@@ -508,6 +405,44 @@ const Dashboard = ({
         </div>
       </div>
 
+      {/* Stats Cards */}
+      <div className="dashboard-grid">
+        <div className="card stats-card">
+          <div className="stats-header">
+            <span>Pendapatan Cair</span>
+            <DollarSign size={16} className="text-success" style={{ color: 'var(--success-color)' }} />
+          </div>
+          <div className="stats-value">{formatCurrency(totalPaid)}</div>
+          <div className="stats-change up">
+            <TrendingUp size={12} />
+            <span>Invoice Lunas</span>
+          </div>
+        </div>
+
+        <div className="card stats-card">
+          <div className="stats-header">
+            <span>Tertunda & Telat</span>
+            <Clock size={16} className="text-warning" style={{ color: 'var(--warning-color)' }} />
+          </div>
+          <div className="stats-value">{formatCurrency(totalPending + totalOverdue)}</div>
+          <div className="stats-change down" style={{ color: totalOverdue > 0 ? 'var(--danger-color)' : 'var(--warning-color)' }}>
+            {totalOverdue > 0 ? <TrendingDown size={12} /> : <Clock size={12} />}
+            <span>{totalOverdue > 0 ? `${formatCurrency(totalOverdue)} Telat Bayar` : 'Menunggu pembayaran'}</span>
+          </div>
+        </div>
+
+        <div className="card stats-card">
+          <div className="stats-header">
+            <span>Proyek Aktif</span>
+            <CalendarIcon size={16} className="text-accent" style={{ color: 'var(--accent-color)' }} />
+          </div>
+          <div className="stats-value">{activeProjectsCount}</div>
+          <div className="stats-change up" style={{ color: 'var(--accent-color)' }}>
+            <span>Dalam Alur Kerja Konten</span>
+          </div>
+        </div>
+      </div>
+
       {/* Urgent Notifications */}
       {(totalOverdue > 0 || urgentTasks.length > 0) && (
         <div className="card" style={{ marginBottom: '24px', borderColor: 'var(--danger-color)', backgroundColor: 'rgba(244, 63, 94, 0.02)' }}>
@@ -534,6 +469,71 @@ const Dashboard = ({
           </ul>
         </div>
       )}
+
+      {/* Morning Briefing Card */}
+      <div className="card" style={{ 
+        marginBottom: '24px', 
+        position: 'relative', 
+        overflow: 'hidden',
+        background: 'linear-gradient(135deg, rgba(24, 26, 31, 0.9) 0%, rgba(53, 90, 102, 0.2) 100%)',
+        border: '1.5px solid var(--border-color)',
+        padding: '20px'
+      }}>
+        <div style={{
+          position: 'absolute',
+          top: '-40px',
+          left: '-40px',
+          width: '120px',
+          height: '120px',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, transparent 70%)',
+          zIndex: 0,
+          pointerEvents: 'none'
+        }} />
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', position: 'relative', zIndex: 1 }}>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', margin: 0, color: 'var(--text-primary)' }}>
+            <Coffee size={16} style={{ color: 'var(--accent-color)' }} /> Briefing Pagi Manajer
+          </h3>
+          <button 
+            className="btn btn-secondary" 
+            style={{ padding: '4px 10px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px' }}
+            onClick={loadBriefing}
+            disabled={loadingBriefing}
+          >
+            <RefreshCw size={11} className={loadingBriefing ? 'spin-animation' : ''} />
+            {loadingBriefing ? 'Memuat...' : 'Perbarui'}
+          </button>
+        </div>
+
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          {loadingBriefing ? (
+            <div style={{ padding: '12px 0', display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-secondary)' }}>
+              <RefreshCw className="spin-animation" size={13} style={{ color: 'var(--accent-color)' }} />
+              <span style={{ fontSize: '13px' }}>Manajer sedang merangkum status hari ini...</span>
+            </div>
+          ) : errorBriefing ? (
+            <div style={{ padding: '8px 12px', borderRadius: '4px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', fontSize: '12.5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>⚠️ {errorBriefing}</span>
+              <button className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: '10.5px', borderColor: 'rgba(239, 68, 68, 0.2)' }} onClick={loadBriefing}>Coba Lagi</button>
+            </div>
+          ) : briefingText ? (
+            <div style={{ 
+              fontSize: '13.5px', 
+              color: 'var(--text-secondary)', 
+              lineHeight: '1.6',
+              backgroundColor: 'rgba(17, 17, 17, 0.4)',
+              padding: '14px 16px',
+              borderRadius: 'var(--border-radius-sm)',
+              border: '1.5px solid var(--border-color)'
+            }}>
+              {formatText(briefingText)}
+            </div>
+          ) : (
+            <div style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Belum ada briefing hari ini.</div>
+          )}
+        </div>
+      </div>
 
       {/* Daily Content Idea Generator Card */}
       <div className="card" style={{ marginBottom: '24px', position: 'relative', overflow: 'hidden' }}>

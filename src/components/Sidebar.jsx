@@ -13,7 +13,7 @@ import {
 
 const Sidebar = ({ activeTab, setActiveTab, profile }) => {
   const menuItems = [
-    { id: 'overview', label: 'Ringkasan', icon: LayoutDashboard },
+    { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'pipeline', label: 'Alur Konten', icon: KanbanSquare },
     { id: 'ai-portal', label: 'Pusat Asisten', icon: Users },
     { id: 'conversation', label: 'Diskusi Manajer', icon: MessageCircle },
