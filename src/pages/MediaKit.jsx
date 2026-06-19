@@ -410,7 +410,7 @@ const MediaKit = ({ profile, setProfile }) => {
         )}
 
         {/* Rate Card Table */}
-        <div style={{ marginBottom: '24px' }}>
+        <div className="no-break-box" style={{ marginBottom: '24px' }}>
           <h3 style={{ fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', color: st.text, letterSpacing: '0.05em', borderBottom: `1px solid ${st.border}`, paddingBottom: '6px', marginBottom: '12px' }}>
             Daftar Tarif Layanan (Rate Card)
           </h3>
@@ -435,7 +435,7 @@ const MediaKit = ({ profile, setProfile }) => {
         </div>
 
         {/* Cooperation terms */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '10px', color: st.textSec, borderTop: `1px solid ${st.border}`, paddingTop: '12px' }}>
+        <div className="no-break-box" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '10px', color: st.textSec, borderTop: `1px solid ${st.border}`, paddingTop: '12px' }}>
           <div>
             <div style={{ fontWeight: '700', color: st.text, marginBottom: '4px', textTransform: 'uppercase' }}>Kebijakan &amp; Kerja Sama</div>
             <ul style={{ paddingLeft: '12px', margin: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>

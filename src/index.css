@@ -886,6 +886,25 @@ textarea.form-control {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+
+  #print-section h1, #print-section h2, #print-section h3, #print-section h4 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  #print-section p, 
+  #print-section ul, 
+  #print-section ol, 
+  #print-section li,
+  #print-section table, 
+  #print-section tr, 
+  #print-section td, 
+  #print-section th,
+  #print-section .no-break-box,
+  #print-section > div > div {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
 }
 
 /* Brief and Contract Analysis Results Styles */
