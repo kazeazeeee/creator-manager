@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Copy, Sparkles, CheckCircle, FileEdit, Trash2, RefreshCw, Plus, FileText, Send, Clock, AlignLeft, ChevronRight } from 'lucide-react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import { apiAnalyzeScript } from '../utils/api';
 
 const Note = ({ addPipelineTask }) => {
@@ -136,9 +138,18 @@ const Note = ({ addPipelineTask }) => {
 
   // --- STATS CALCULATOR ---
   const getWordCount = () => {
-    return content.trim() ? content.trim().split(/\s+/).length : 0;
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = content || "";
+    const text = tempDiv.textContent || tempDiv.innerText || "";
+    return text.trim() ? text.trim().split(/\s+/).length : 0;
   };
   const wordCount = getWordCount();
+  const getCharCount = () => {
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = content || "";
+    const text = tempDiv.textContent || tempDiv.innerText || "";
+    return text.length;
+  };
   const readingTimeSecs = Math.ceil((wordCount / 130) * 60); // Asumsi 130 kata per menit
   
   const formatDuration = (secs) => {
@@ -150,9 +161,34 @@ const Note = ({ addPipelineTask }) => {
 
   // --- TOOLS ACTIONS ---
   const handleCopy = () => {
-    navigator.clipboard.writeText(content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = content || "";
+    const plainText = tempDiv.textContent || tempDiv.innerText || "";
+
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(plainText).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    } else {
+      // Fallback for HTTP / non-secure contexts
+      const textArea = document.createElement("textarea");
+      textArea.value = plainText;
+      textArea.style.position = "absolute";
+      textArea.style.left = "-999999px";
+      document.body.prepend(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (error) {
+        console.error(error);
+        alert("Gagal menyalin otomatis. Silakan salin manual.");
+      } finally {
+        textArea.remove();
+      }
+    }
   };
 
   const handleClear = () => {
@@ -353,24 +389,23 @@ ${res.viralImprovements && res.viralImprovements.length > 0 ? res.viralImproveme
 
             {/* Editor Body */}
             <div style={{ flexGrow: 1, position: 'relative', display: 'flex', flexDirection: 'column' }}>
-              <textarea
-                value={content}
-                onChange={handleContentChange}
-                placeholder="Mulai ketik draf skrip, kerangka ide, atau cerita Anda di sini..."
-                style={{
-                  flexGrow: 1,
-                  width: '100%',
-                  resize: 'none',
-                  backgroundColor: 'transparent',
-                  color: 'var(--text-primary)',
-                  border: 'none',
-                  padding: '24px',
-                  fontSize: '16px',
-                  lineHeight: '1.8',
-                  fontFamily: 'var(--font-sans)',
-                  outline: 'none'
-                }}
-              />
+              <div className="editor-container" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                <ReactQuill 
+                  theme="snow"
+                  value={content}
+                  onChange={(val) => handleContentChange({ target: { value: val }})}
+                  placeholder="Mulai ketik draf skrip, kerangka ide, atau cerita Anda di sini..."
+                  modules={{
+                    toolbar: [
+                      ['bold', 'italic', 'underline', 'strike'],
+                      [{ 'header': 1 }, { 'header': 2 }],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      ['clean']
+                    ]
+                  }}
+                  style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}
+                />
+              </div>
               
               {/* Error Overlay */}
               {error && (
@@ -397,7 +432,7 @@ ${res.viralImprovements && res.viralImprovements.length > 0 ? res.viralImproveme
                   <AlignLeft size={14} /> <strong style={{ color: 'var(--text-secondary)' }}>{wordCount}</strong> Kata
                 </span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <FileText size={14} /> <strong style={{ color: 'var(--text-secondary)' }}>{content.length}</strong> Karakter
+                  <FileText size={14} /> <strong style={{ color: 'var(--text-secondary)' }}>{getCharCount()}</strong> Karakter
                 </span>
               </div>
               <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
