@@ -654,8 +654,10 @@ const Pipeline = ({ pipelineTasks = [], setPipelineTasks, addCalendarEvent, onCr
                     )}
 
                     {task.dueDate && (
-                      <div className="card-due-date" style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Calendar size={10} /> Tenggat: {task.dueDate}
+                      <div className="card-due-date" style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+                          <Calendar size={10} /> Tenggat: {task.dueDate}
+                        </span>
                         {dlLabel && (
                           <span style={{
                             marginLeft: '4px',
@@ -663,15 +665,14 @@ const Pipeline = ({ pipelineTasks = [], setPipelineTasks, addCalendarEvent, onCr
                             fontWeight: '700',
                             padding: '1px 5px',
                             borderRadius: '3px',
-                            background: dlClass === 'deadline-warning' ? 'rgba(245,158,11,0.2)' :
-                                         dlClass === 'deadline-today' ? 'rgba(239,68,68,0.2)' :
-                                         dlClass === 'deadline-overdue' ? 'rgba(185,28,28,0.25)' : 'transparent',
-                            color: dlClass === 'deadline-warning' ? '#f59e0b' :
-                                   dlClass === 'deadline-today' ? '#ef4444' :
-                                   dlClass === 'deadline-overdue' ? '#fca5a5' : 'inherit',
+                            background: dlClass === 'deadline-warning' ? 'rgba(245,158,11,0.15)' :
+                                         dlClass === 'deadline-today' ? 'rgba(239,68,68,0.15)' :
+                                         dlClass === 'deadline-overdue' ? 'rgba(220,38,38,0.15)' : 'transparent',
+                            color: dlClass === 'deadline-warning' ? '#d97706' : 'var(--danger-color)',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '3px'
+                            gap: '3px',
+                            whiteSpace: 'nowrap'
                           }}>
                             {(dlClass === 'deadline-today' || dlClass === 'deadline-overdue') && <AlertTriangle size={9} />}
                             {dlLabel}
