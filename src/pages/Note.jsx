@@ -1,8 +1,75 @@
-import React, { useState, useEffect } from 'react';
-import { Copy, Sparkles, CheckCircle, FileEdit, Trash2, RefreshCw, Plus, FileText, Send, Clock, AlignLeft, ChevronRight } from 'lucide-react';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import React, { useState, useEffect, useRef } from 'react';
+import { Copy, Sparkles, CheckCircle, FileEdit, Trash2, RefreshCw, Plus, FileText, Send, Clock, AlignLeft, ChevronRight, Bold, Italic, Underline, Strikethrough, List, ListOrdered } from 'lucide-react';
 import { apiAnalyzeScript } from '../utils/api';
+
+const RichTextEditor = ({ value, onChange, placeholder }) => {
+  const editorRef = useRef(null);
+  const isTyping = useRef(false);
+
+  useEffect(() => {
+    if (editorRef.current && !isTyping.current && editorRef.current.innerHTML !== value) {
+      editorRef.current.innerHTML = value;
+    }
+  }, [value]);
+
+  const handleInput = () => {
+    if (editorRef.current) {
+      isTyping.current = true;
+      onChange(editorRef.current.innerHTML);
+      setTimeout(() => { isTyping.current = false; }, 100);
+    }
+  };
+
+  const executeCommand = (command, val = null) => {
+    document.execCommand(command, false, val);
+    editorRef.current.focus();
+    handleInput();
+  };
+
+  const btnStyle = {
+    background: 'transparent',
+    border: '1px solid var(--border-color)',
+    borderRadius: '4px',
+    padding: '6px 10px',
+    cursor: 'pointer',
+    color: 'var(--text-secondary)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.2s ease'
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+      <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '8px', backgroundColor: 'var(--bg-tertiary)' }}>
+        <button onClick={() => executeCommand('bold')} style={btnStyle} title="Bold" className="editor-btn"><Bold size={16} /></button>
+        <button onClick={() => executeCommand('italic')} style={btnStyle} title="Italic" className="editor-btn"><Italic size={16} /></button>
+        <button onClick={() => executeCommand('underline')} style={btnStyle} title="Underline" className="editor-btn"><Underline size={16} /></button>
+        <button onClick={() => executeCommand('strikeThrough')} style={btnStyle} title="Strikethrough" className="editor-btn"><Strikethrough size={16} /></button>
+        <div style={{ width: '1px', backgroundColor: 'var(--border-color)', margin: '0 4px' }}></div>
+        <button onClick={() => executeCommand('insertOrderedList')} style={btnStyle} title="Numbered List" className="editor-btn"><ListOrdered size={16} /></button>
+        <button onClick={() => executeCommand('insertUnorderedList')} style={btnStyle} title="Bullet List" className="editor-btn"><List size={16} /></button>
+        <div style={{ width: '1px', backgroundColor: 'var(--border-color)', margin: '0 4px' }}></div>
+        <button onClick={() => executeCommand('formatBlock', 'H1')} style={btnStyle} title="Heading 1" className="editor-btn"><strong style={{fontSize:'14px'}}>H1</strong></button>
+        <button onClick={() => executeCommand('formatBlock', 'H2')} style={btnStyle} title="Heading 2" className="editor-btn"><strong style={{fontSize:'14px'}}>H2</strong></button>
+        <button onClick={() => executeCommand('removeFormat')} style={btnStyle} title="Clear Formatting" className="editor-btn">Clear</button>
+      </div>
+      <div
+        ref={editorRef}
+        contentEditable
+        onInput={handleInput}
+        onBlur={handleInput}
+        placeholder={placeholder}
+        className="custom-rich-text-editor"
+        style={{
+          flexGrow: 1, padding: '24px', outline: 'none', overflowY: 'auto', 
+          fontSize: '16px', lineHeight: '1.8', color: 'var(--text-primary)',
+          fontFamily: 'var(--font-sans)', minHeight: '300px'
+        }}
+      />
+    </div>
+  );
+};
 
 const Note = ({ addPipelineTask }) => {
   // --- STATE UNTUK MULTI-NOTE ---
@@ -390,20 +457,10 @@ ${res.viralImprovements && res.viralImprovements.length > 0 ? res.viralImproveme
             {/* Editor Body */}
             <div style={{ flexGrow: 1, position: 'relative', display: 'flex', flexDirection: 'column' }}>
               <div className="editor-container" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                <ReactQuill 
-                  theme="snow"
+                <RichTextEditor 
                   value={content}
                   onChange={(val) => handleContentChange({ target: { value: val }})}
                   placeholder="Mulai ketik draf skrip, kerangka ide, atau cerita Anda di sini..."
-                  modules={{
-                    toolbar: [
-                      ['bold', 'italic', 'underline', 'strike'],
-                      [{ 'header': 1 }, { 'header': 2 }],
-                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                      ['clean']
-                    ]
-                  }}
-                  style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}
                 />
               </div>
               

@@ -1895,3 +1895,16 @@ textarea.form-control {
 @keyframes spin { to { transform: rotate(360deg); } }
 .animate-spin { animation: spin 1s linear infinite; }
 .spin-animation { animation: spin 1s linear infinite; }
+
+/* Custom Rich Text Editor Styles */
+.custom-rich-text-editor:empty:before {
+  content: attr(placeholder);
+  color: var(--text-muted);
+  pointer-events: none;
+  display: block;
+}
+.editor-btn:hover {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--accent-color) !important;
+}
