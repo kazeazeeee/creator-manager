@@ -475,7 +475,6 @@ const Dashboard = ({
         marginBottom: '24px', 
         position: 'relative', 
         overflow: 'hidden',
-        background: 'linear-gradient(135deg, rgba(24, 26, 31, 0.9) 0%, rgba(53, 90, 102, 0.2) 100%)',
         border: '1.5px solid var(--border-color)',
         padding: '20px'
       }}>
@@ -522,7 +521,7 @@ const Dashboard = ({
               fontSize: '13.5px', 
               color: 'var(--text-secondary)', 
               lineHeight: '1.6',
-              backgroundColor: 'rgba(17, 17, 17, 0.4)',
+              backgroundColor: 'var(--bg-tertiary)',
               padding: '14px 16px',
               borderRadius: 'var(--border-radius-sm)',
               border: '1.5px solid var(--border-color)'
