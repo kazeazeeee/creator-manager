@@ -274,7 +274,7 @@ const MediaKit = ({ profile, setProfile }) => {
         padding: isPreview ? '24px' : '40px', 
         backgroundColor: st.bg, 
         color: st.text, 
-        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontFamily: 'var(--font-sans)',
         borderRadius: isPreview ? 'var(--border-radius-md)' : '0',
         border: isPreview ? `1px solid ${st.border}` : 'none',
         boxShadow: isPreview ? '0 10px 15px -3px rgba(0,0,0,0.1)' : 'none',
@@ -305,10 +305,10 @@ const MediaKit = ({ profile, setProfile }) => {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: st.textSec, minWidth: '180px', textAlign: isPreview ? 'left' : 'right' }}>
             <div style={{ fontWeight: '700', textTransform: 'uppercase', color: st.text, marginBottom: '4px', letterSpacing: '0.05em' }}>KONTAK &amp; MEDIA</div>
-            {formProfile.email && <div>✉️ {formProfile.email}</div>}
-            {formProfile.instagram && <div style={{ wordBreak: 'break-all' }}>📸 instagram.com/{formProfile.handle}</div>}
-            {formProfile.tiktok && <div style={{ wordBreak: 'break-all' }}>🎵 tiktok.com/@{formProfile.handle}</div>}
-            {formProfile.youtube && <div style={{ wordBreak: 'break-all' }}>🎥 youtube.com/{formProfile.handle}</div>}
+            {formProfile.email && <div><strong>Email:</strong> {formProfile.email}</div>}
+            {formProfile.instagram && <div style={{ wordBreak: 'break-all' }}><strong>Instagram:</strong> instagram.com/{formProfile.handle}</div>}
+            {formProfile.tiktok && <div style={{ wordBreak: 'break-all' }}><strong>TikTok:</strong> tiktok.com/@{formProfile.handle}</div>}
+            {formProfile.youtube && <div style={{ wordBreak: 'break-all' }}><strong>YouTube:</strong> youtube.com/{formProfile.handle}</div>}
           </div>
         </div>
 
@@ -321,8 +321,8 @@ const MediaKit = ({ profile, setProfile }) => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
             {/* Instagram Card */}
             <div style={{ padding: '12px', border: `1px solid ${st.border}`, borderRadius: '6px', backgroundColor: st.cardBg }}>
-              <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#e1306c', marginBottom: '6px' }}>
-                📸 Instagram
+              <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: st.text, marginBottom: '6px' }}>
+                Instagram
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                 <span style={{ fontSize: '18px', fontWeight: '800', color: st.text }}>{formProfile.instagramFollowers || '-'}</span>
@@ -332,8 +332,8 @@ const MediaKit = ({ profile, setProfile }) => {
             
             {/* TikTok Card */}
             <div style={{ padding: '12px', border: `1px solid ${st.border}`, borderRadius: '6px', backgroundColor: st.cardBg }}>
-              <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: pdfTheme === 'dark' ? '#00f0ff' : '#000000', marginBottom: '6px' }}>
-                🎵 TikTok
+              <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: st.text, marginBottom: '6px' }}>
+                TikTok
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                 <span style={{ fontSize: '18px', fontWeight: '800', color: st.text }}>{formProfile.tiktokFollowers || '-'}</span>
@@ -343,8 +343,8 @@ const MediaKit = ({ profile, setProfile }) => {
 
             {/* YouTube Card */}
             <div style={{ padding: '12px', border: `1px solid ${st.border}`, borderRadius: '6px', backgroundColor: st.cardBg }}>
-              <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#ff0000', marginBottom: '6px' }}>
-                🎥 YouTube
+              <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: st.text, marginBottom: '6px' }}>
+                YouTube
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                 <span style={{ fontSize: '18px', fontWeight: '800', color: st.text }}>{formProfile.youtubeFollowers || '-'}</span>
@@ -400,8 +400,8 @@ const MediaKit = ({ profile, setProfile }) => {
                     {post.title}
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: `1px solid ${st.border}`, paddingTop: '4px', fontSize: '9px', color: st.textSec }}>
-                    <span>👁️ {(post.views || 0).toLocaleString('id-ID')} views</span>
-                    <span>❤️ {(post.likes || 0).toLocaleString('id-ID')} likes</span>
+                    <span><strong>Views:</strong> {(post.views || 0).toLocaleString('id-ID')}</span>
+                    <span><strong>Likes:</strong> {(post.likes || 0).toLocaleString('id-ID')}</span>
                   </div>
                 </div>
               ))}
@@ -495,29 +495,28 @@ const MediaKit = ({ profile, setProfile }) => {
             ) : (
               <>
                 {/* Print PDF Theme Selector */}
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginRight: '16px', backgroundColor: 'var(--bg-secondary)', padding: '4px 8px', borderRadius: 'var(--border-radius-md)', border: '1px solid var(--border-color)' }}>
-                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600' }}>TEMA PDF:</span>
-                  <button 
-                    className={`btn ${pdfTheme === 'light' ? 'btn-primary' : 'btn-secondary'}`} 
-                    onClick={() => setPdfTheme('light')}
-                    style={{ padding: '4px 8px', fontSize: '11px', height: '26px' }}
-                  >
-                    Clean Light
-                  </button>
-                  <button 
-                    className={`btn ${pdfTheme === 'dark' ? 'btn-primary' : 'btn-secondary'}`} 
-                    onClick={() => setPdfTheme('dark')}
-                    style={{ padding: '4px 8px', fontSize: '11px', height: '26px', backgroundColor: pdfTheme === 'dark' ? '#06b6d4' : '', borderColor: pdfTheme === 'dark' ? '#06b6d4' : '' }}
-                  >
-                    Midnight Cyan
-                  </button>
-                  <button 
-                    className={`btn ${pdfTheme === 'sunset' ? 'btn-primary' : 'btn-secondary'}`} 
-                    onClick={() => setPdfTheme('sunset')}
-                    style={{ padding: '4px 8px', fontSize: '11px', height: '26px', backgroundColor: pdfTheme === 'sunset' ? '#f43f5e' : '', borderColor: pdfTheme === 'sunset' ? '#f43f5e' : '' }}
-                  >
-                    Sunset Rose
-                  </button>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginRight: '16px' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '600', letterSpacing: '0.05em' }}>TEMA PDF:</span>
+                  <div style={{ display: 'flex', border: '1px solid var(--border-color)', borderRadius: '6px', overflow: 'hidden' }}>
+                    <button 
+                      onClick={() => setPdfTheme('light')}
+                      style={{ padding: '6px 12px', fontSize: '11px', fontWeight: '600', background: pdfTheme === 'light' ? 'var(--text-primary)' : 'var(--bg-secondary)', color: pdfTheme === 'light' ? 'var(--bg-primary)' : 'var(--text-secondary)', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}
+                    >
+                      Clean Light
+                    </button>
+                    <button 
+                      onClick={() => setPdfTheme('dark')}
+                      style={{ padding: '6px 12px', fontSize: '11px', fontWeight: '600', background: pdfTheme === 'dark' ? 'var(--text-primary)' : 'var(--bg-secondary)', color: pdfTheme === 'dark' ? 'var(--bg-primary)' : 'var(--text-secondary)', border: 'none', borderLeft: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)', cursor: 'pointer', transition: 'all 0.2s' }}
+                    >
+                      Midnight Cyan
+                    </button>
+                    <button 
+                      onClick={() => setPdfTheme('sunset')}
+                      style={{ padding: '6px 12px', fontSize: '11px', fontWeight: '600', background: pdfTheme === 'sunset' ? 'var(--text-primary)' : 'var(--bg-secondary)', color: pdfTheme === 'sunset' ? 'var(--bg-primary)' : 'var(--text-secondary)', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}
+                    >
+                      Sunset Rose
+                    </button>
+                  </div>
                 </div>
                 <button className="btn btn-secondary" onClick={() => setEditing(true)}>Edit Profil &amp; Harga</button>
                 <button className="btn btn-primary" onClick={handlePrint}><Download size={14} /> Cetak PDF</button>
