@@ -571,9 +571,7 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEven
   // Inline markdown formatter helpers
   const highlightKeywords = (text, keyPrefix = 'hl') => {
     if (typeof text !== 'string') return text;
-    
-    const keywordRegex = /\b(brief|kampanye|campaign|sponsor|rate[ -]?card|rates|tarif|budget|anggaran|invoice|deadline|tenggat|revisi|kontrak|eksklusivitas|exclusivity|denda|pembayaran|negosiasi|nego|draf|draft|jadwal|agenda|kolaborasi|collaboration|agreement|brand)(nya|an|kan|i|mu|ku)?\b/gi;
-    
+    const keywordRegex = /(Rp\s*[\d.,]+|\b(?:rate[ -]?card|rates|tarif|budget|anggaran|harga|nominal|jadwal|tanggal|deadline|tenggat|do's|dont's|don'ts|wajib|dilarang|jangan)\b|#[a-zA-Z0-9_]+|\b(?:januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)\b)/gi;
     if (!keywordRegex.test(text)) {
       return [text];
     }
