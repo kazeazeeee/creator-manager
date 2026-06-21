@@ -749,11 +749,23 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEven
         const lines = part.content.split('\n');
         return lines.map((line, lIdx) => {
           if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
-            return <li key={lIdx} style={{ marginLeft: '12px' }}>{parseInlineMarkdown(line.trim().substring(2))}</li>;
+            return (
+              <div key={lIdx} style={{ display: 'flex', marginLeft: '12px', marginBottom: '6px' }}>
+                <span style={{ marginRight: '8px', opacity: 0.8 }}>•</span>
+                <div style={{ flex: 1 }}>{parseInlineMarkdown(line.trim().substring(2))}</div>
+              </div>
+            );
           }
           if (/^\d+\.\s/.test(line.trim())) {
+            const numMatch = line.trim().match(/^(\d+)\.\s/);
+            const num = numMatch ? numMatch[1] : '1';
             const content = line.trim().replace(/^\d+\.\s/, '');
-            return <li key={lIdx} style={{ listStyleType: 'decimal', marginLeft: '12px' }}>{parseInlineMarkdown(content)}</li>;
+            return (
+              <div key={lIdx} style={{ display: 'flex', marginLeft: '12px', marginBottom: '6px' }}>
+                <span style={{ marginRight: '8px', opacity: 0.8, minWidth: '16px' }}>{num}.</span>
+                <div style={{ flex: 1 }}>{parseInlineMarkdown(content)}</div>
+              </div>
+            );
           }
           if (line.trim() === '') return <div key={lIdx} style={{ height: '6px' }} />;
           return <p key={lIdx} style={{ margin: '2px 0 6px 0' }}>{parseInlineMarkdown(line)}</p>;
