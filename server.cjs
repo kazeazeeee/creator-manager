@@ -620,6 +620,14 @@ app.post('/api/calendar', (req, res) => {
   res.status(201).json({ success: true, event: newEvent });
 });
 
+app.delete('/api/calendar/:id', (req, res) => {
+  const db = readDb();
+  const eventId = req.params.id;
+  db.calendar = (db.calendar || []).filter(e => e.id !== eventId);
+  writeDb(db);
+  res.json({ success: true });
+});
+
 // Settings Endpoints
 app.get('/api/settings', (req, res) => {
   const db = readDb();
@@ -938,6 +946,109 @@ function runLocalChatSimulation(lastMsg, agentRole, teamMeetingAgents, db) {
   let reply = '';
   let actionExecuted = null;
 
+  // 0. Detect Delete Commands first to prevent collision with creation
+  if ((lowerText.includes('hapus') || lowerText.includes('delete') || lowerText.includes('buang') || lowerText.includes('batal') || lowerText.includes('cancel')) && 
+      (lowerText.includes('invoice') || lowerText.includes('tagihan'))) {
+    const invIdMatch = lastMsg.match(/INV-[\d\w-]+/i);
+    let deletedInvoice = null;
+    db.invoices = db.invoices || [];
+    if (invIdMatch) {
+      const targetId = invIdMatch[0].toUpperCase();
+      const index = db.invoices.findIndex(inv => inv.id.toUpperCase() === targetId);
+      if (index !== -1) {
+        deletedInvoice = db.invoices[index];
+        db.invoices.splice(index, 1);
+      }
+    } else {
+      const brandMatch = lastMsg.match(/(?:invoice|tagihan)\s+(?:untuk\s+|dari\s+|punya\s+|klien\s+)?([a-zA-Z0-9\s-]+)/i);
+      if (brandMatch) {
+        const brand = brandMatch[1].trim().toLowerCase();
+        const index = db.invoices.findIndex(inv => inv.clientName.toLowerCase().includes(brand) || inv.projectName.toLowerCase().includes(brand));
+        if (index !== -1) {
+          deletedInvoice = db.invoices[index];
+          db.invoices.splice(index, 1);
+        }
+      }
+    }
+    if (deletedInvoice) {
+      writeDb(db);
+      reply = `Tentu, saya telah menghapus invoice **${deletedInvoice.id}** untuk **${deletedInvoice.clientName}** sebesar **Rp ${deletedInvoice.amount.toLocaleString('id-ID')}** dari database.`;
+      actionExecuted = { type: 'invoice_delete', data: { id: deletedInvoice.id } };
+      return { reply, actionExecuted };
+    } else {
+      reply = `Saya tidak dapat menemukan invoice yang dimaksud untuk dihapus. Silakan sebutkan nama klien atau ID invoice-nya dengan jelas.`;
+      return { reply, actionExecuted: null };
+    }
+  }
+
+  if ((lowerText.includes('hapus') || lowerText.includes('delete') || lowerText.includes('buang') || lowerText.includes('batal')) && 
+      (lowerText.includes('jadwal') || lowerText.includes('agenda') || lowerText.includes('kalender') || lowerText.includes('event'))) {
+    const queryMatch = lastMsg.match(/(?:jadwal|agenda|kalender|event)\s+(?:untuk\s+|tentang\s+|berjudul\s+|rapat\s+|meeting\s+)?([a-zA-Z0-9\s-]+)/i);
+    let deletedEvent = null;
+    db.calendar = db.calendar || [];
+    if (queryMatch) {
+      const q = queryMatch[1].trim().toLowerCase();
+      const index = db.calendar.findIndex(e => e.title.toLowerCase().includes(q) || (e.brand && e.brand.toLowerCase().includes(q)));
+      if (index !== -1) {
+        deletedEvent = db.calendar[index];
+        db.calendar.splice(index, 1);
+      }
+    } else {
+      const words = lowerText.split(/\s+/).filter(w => w.length > 3 && !['hapus', 'delete', 'jadwal', 'agenda', 'kalender', 'event', 'pada', 'tanggal'].includes(w));
+      for (const w of words) {
+        const index = db.calendar.findIndex(e => e.title.toLowerCase().includes(w));
+        if (index !== -1) {
+          deletedEvent = db.calendar[index];
+          db.calendar.splice(index, 1);
+          break;
+        }
+      }
+    }
+    if (deletedEvent) {
+      writeDb(db);
+      reply = `Tentu! Saya telah menghapus agenda "**${deletedEvent.title}**" (${deletedEvent.start}) dari Kalender Anda.`;
+      actionExecuted = { type: 'calendar_delete', data: { id: deletedEvent.id } };
+      return { reply, actionExecuted };
+    } else {
+      reply = `Saya tidak dapat menemukan agenda kalender yang cocok untuk dihapus. Coba sebutkan nama agenda secara spesifik.`;
+      return { reply, actionExecuted: null };
+    }
+  }
+
+  if ((lowerText.includes('hapus') || lowerText.includes('delete') || lowerText.includes('buang')) && 
+      (lowerText.includes('tugas') || lowerText.includes('task') || lowerText.includes('pekerjaan'))) {
+    const queryMatch = lastMsg.match(/(?:tugas|task|pekerjaan)\s+(?:untuk\s+|tentang\s+|berjudul\s+)?([a-zA-Z0-9\s-]+)/i);
+    let deletedTask = null;
+    db.tasks = db.tasks || [];
+    if (queryMatch) {
+      const q = queryMatch[1].trim().toLowerCase();
+      const index = db.tasks.findIndex(t => t.title.toLowerCase().includes(q) || t.brand.toLowerCase().includes(q));
+      if (index !== -1) {
+        deletedTask = db.tasks[index];
+        db.tasks.splice(index, 1);
+      }
+    } else {
+      const words = lowerText.split(/\s+/).filter(w => w.length > 3 && !['hapus', 'delete', 'tugas', 'task', 'pekerjaan'].includes(w));
+      for (const w of words) {
+        const index = db.tasks.findIndex(t => t.title.toLowerCase().includes(w) || t.brand.toLowerCase().includes(w));
+        if (index !== -1) {
+          deletedTask = db.tasks[index];
+          db.tasks.splice(index, 1);
+          break;
+        }
+      }
+    }
+    if (deletedTask) {
+      writeDb(db);
+      reply = `Siap, saya telah menghapus tugas "**${deletedTask.title}**" untuk brand **${deletedTask.brand}** dari alur kerja Anda.`;
+      actionExecuted = { type: 'task_delete', data: { id: deletedTask.id } };
+      return { reply, actionExecuted };
+    } else {
+      reply = `Saya tidak dapat menemukan tugas yang cocok untuk dihapus. Coba sebutkan nama brand atau judul tugas dengan jelas.`;
+      return { reply, actionExecuted: null };
+    }
+  }
+
   // 1. Detect Rate Card Update command
   if ((lowerText.includes('rate card') || lowerText.includes('rates') || lowerText.includes('tarif')) && 
       (lowerText.includes('ubah') || lowerText.includes('ganti') || lowerText.includes('update') || lowerText.includes('set'))) {
@@ -1202,7 +1313,7 @@ app.post('/api/ai/chat', async (req, res) => {
   if (calendar.length > 0) {
     creatorContext += `\n\n=== AGENDA KALENDER (${calendar.length} agenda) ===`;
     calendar.slice(0, 8).forEach((evt, i) => {
-      creatorContext += `\n${i + 1}. "${evt.title}" | Tanggal: ${evt.date || '-'} | Tipe: ${evt.type || '-'}`;
+      creatorContext += `\n${i + 1}. "${evt.title}" | Tanggal: ${evt.start || '-'} | Tipe: ${evt.type || '-'}`;
     });
   }
 
@@ -1262,13 +1373,16 @@ Aturan Penulisan & Format Balasan Anda:
 4. **Keterbacaan:** Bold pada kata penting. List hanya jika perlu.
 5. **Aksi Nyata / Tool Calling (PENTING):** Anda memiliki kemampuan untuk melakukan aksi nyata langsung pada database aplikasi jika Kreator meminta Anda untuk menambah, menghapus, atau mengubah data (seperti tugas, jadwal/kalender, invoice, atau rate card).
    Jika Anda mendeteksi bahwa Kreator meminta Anda melakukan tindakan tersebut, Anda wajib menyisipkan tag instruksi eksekusi di bagian paling akhir balasan Anda (setelah pesan teks Anda) menggunakan format JSON berikut:
-   [EXECUTE_ACTION: { "action": "create_task" | "create_invoice" | "create_calendar_event" | "update_rates", "data": { ... } }]
+   [EXECUTE_ACTION: { "action": "create_task" | "create_invoice" | "create_calendar_event" | "update_rates" | "delete_task" | "delete_invoice" | "delete_calendar_event", "data": { ... } }]
 
    Struktur parameter data untuk masing-masing aksi:
    - create_task: { "title": string (wajib), "brand": string (wajib), "platform": "TikTok"|"Instagram"|"YouTube"|"Lainnya" (wajib), "dueDate": "YYYY-MM-DD" (wajib) }
    - create_invoice: { "clientName": string (wajib), "projectName": string (wajib), "amount": number (wajib), "dueDate": "YYYY-MM-DD" (wajib) }
    - create_calendar_event: { "title": string (wajib), "date": "YYYY-MM-DD" (wajib), "type": "personal"|"brand"|"deadline" (wajib), "brand": string }
    - update_rates: { "rates": number (wajib) }
+   - delete_task: { "id": string (wajib - ID tugas yang ingin dihapus dari daftar alur kerja di atas) }
+   - delete_invoice: { "id": string (wajib - ID invoice yang ingin dihapus, misal 'INV-2026-1234', dari daftar invoice di atas) }
+   - delete_calendar_event: { "id": string (wajib - ID agenda kalender yang ingin dihapus dari daftar agenda kalender di atas) }
 
    Contoh: Jika Kreator meminta "Tolong buatkan invoice Tokopedia Rp 5.000.000 jatuh tempo tanggal 19 Juni 2026", balasan Anda:
    "Tentu, saya sudah membuatkan invoice untuk Tokopedia sebesar Rp 5.000.000 dengan jatuh tempo 19 Juni 2026. Anda bisa mengeceknya langsung di tab Invoice."
@@ -1358,6 +1472,21 @@ Tanggapan Baru Anda (singkat & tepat sasaran):
             dbCurrent.profile = dbCurrent.profile || {};
             dbCurrent.profile.rates = actionObj.data.rates;
             actionExecuted = { type: 'profile', data: dbCurrent.profile };
+          }
+          else if (actionObj.action === 'delete_task') {
+            const taskId = actionObj.data.id;
+            dbCurrent.tasks = (dbCurrent.tasks || []).filter(t => t.id !== taskId);
+            actionExecuted = { type: 'task_delete', data: { id: taskId } };
+          }
+          else if (actionObj.action === 'delete_invoice') {
+            const invoiceId = actionObj.data.id;
+            dbCurrent.invoices = (dbCurrent.invoices || []).filter(inv => inv.id !== invoiceId);
+            actionExecuted = { type: 'invoice_delete', data: { id: invoiceId } };
+          }
+          else if (actionObj.action === 'delete_calendar_event') {
+            const eventId = actionObj.data.id;
+            dbCurrent.calendar = (dbCurrent.calendar || []).filter(e => e.id !== eventId);
+            actionExecuted = { type: 'calendar_delete', data: { id: eventId } };
           }
 
           writeDb(dbCurrent);

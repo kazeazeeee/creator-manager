@@ -369,8 +369,47 @@ const CalendarView = ({ calendarEvents = [], setCalendarEvents, googleConnected,
                           event.type === 'brand' ? 'brand' : 'personal'
                         }`}
                         title={`${event.title} (${event.brand || 'Personal'})`}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          gap: '4px',
+                          paddingRight: '6px'
+                        }}
                       >
-                        {event.title}
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexGrow: 1 }}>
+                          {event.title}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm(`Apakah Anda yakin ingin menghapus agenda "${event.title}"?`)) {
+                              setCalendarEvents(calendarEvents.filter(evt => evt.id !== event.id));
+                            }
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'inherit',
+                            fontSize: '11px',
+                            lineHeight: '1',
+                            cursor: 'pointer',
+                            padding: '0 2px',
+                            fontWeight: 'bold',
+                            opacity: 0.6,
+                            transition: 'opacity 0.2s',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                          }}
+                          title="Hapus Agenda"
+                          onMouseEnter={(e) => e.target.style.opacity = 1}
+                          onMouseLeave={(e) => e.target.style.opacity = 0.6}
+                        >
+                          &times;
+                        </button>
                       </div>
                     ))}
                   </div>

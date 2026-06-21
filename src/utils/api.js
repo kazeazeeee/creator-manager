@@ -78,6 +78,9 @@ export const apiAddCalendar = (event) => request('/calendar', {
   method: 'POST',
   body: JSON.stringify(event)
 });
+export const apiDeleteCalendar = (id) => request(`/calendar/${id}`, {
+  method: 'DELETE'
+});
 
 // Settings
 export const apiGetSettings = () => request('/settings');

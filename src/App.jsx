@@ -28,6 +28,7 @@ import {
   apiDeleteInvoice, 
   apiGetCalendar, 
   apiAddCalendar, 
+  apiDeleteCalendar,
   apiGetSettings, 
   apiSaveSettings,
   apiSyncRecentPosts
@@ -415,12 +416,19 @@ function App() {
             calendarEvents={calendarEvents} 
             setCalendarEvents={async (newEvents) => {
               setCalendarEvents(newEvents);
-              // Simple add calendar event sync
               const oldEvents = await apiGetCalendar();
+              // Sync additions
               newEvents.forEach(async (evt) => {
                 const old = oldEvents.some(o => o.id === evt.id);
                 if (!old) {
                   await apiAddCalendar(evt);
+                }
+              });
+              // Sync deletions
+              oldEvents.forEach(async (oldEvt) => {
+                const stillExists = newEvents.some(n => n.id === oldEvt.id);
+                if (!stillExists) {
+                  await apiDeleteCalendar(oldEvt.id);
                 }
               });
             }} 

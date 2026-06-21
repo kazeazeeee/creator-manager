@@ -443,6 +443,36 @@
   ],
   "tasks": [
     {
+      "id": "task-1782054166930",
+      "title": "Cimory Eat Milk Matcha - #MaCoKu",
+      "brand": "Cimory",
+      "platform": "TikTok",
+      "status": "brief",
+      "dueDate": "2026-06-22",
+      "deliverables": "1x Video Review #MaCoKu (Cimory + Kopi Kaleng), No mirroring, Review max 15s",
+      "notes": "POV: Foodie/Lifestyle. DO: Makan langsung dari kemasan beku, pakai gelas bening, sebut 'Cimori It Milk Maca'. DONT: Tampilkan kompetitor, pakaian terbuka.",
+      "contentType": "brand",
+      "assignee": "Talent Utama",
+      "isRevising": false,
+      "subtasks": [
+        {
+          "id": "st-1",
+          "text": "Bekukan Cimory Eat Milk Matcha H-1",
+          "completed": false
+        },
+        {
+          "id": "st-2",
+          "text": "Take Video: Campur kopi dan minum",
+          "completed": false
+        },
+        {
+          "id": "st-3",
+          "text": "Editing: Tambahkan HOOK yg kuat & sound viral",
+          "completed": false
+        }
+      ]
+    },
+    {
       "id": "task-1781590822844",
       "title": "Draf Naskah: Nutrijell Takjell Festival",
       "brand": "Nutrijell",
@@ -541,6 +571,20 @@
       "start": "2026-06-19",
       "type": "brand",
       "brand": "Tokopedia"
+    },
+    {
+      "id": "event-deadline-1782054166930",
+      "title": "Tenggat Draft: Cimory Eat Milk Matcha",
+      "start": "2026-06-22",
+      "type": "deadline",
+      "brand": "Cimory"
+    },
+    {
+      "id": "event-airing-1782054166930",
+      "title": "Tayang: Cimory Eat Milk #MaCoKu",
+      "start": "2026-06-25",
+      "type": "event",
+      "brand": "Cimory"
     }
   ],
   "settings": {
