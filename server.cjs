@@ -1417,85 +1417,101 @@ Tanggapan Baru Anda (singkat & tepat sasaran):
       replyText = result.reply;
       actionExecuted = result.actionExecuted;
     } else {
-      // Detect if model outputted EXECUTE_ACTION
-      const actionRegex = /\[EXECUTE_ACTION:\s*(\{[\s\S]*?\})\s*\]/;
-      const match = replyText.match(actionRegex);
-      if (match) {
-        try {
-          const actionObj = JSON.parse(match[1]);
-          const dbCurrent = readDb();
-          
-          if (actionObj.action === 'create_task') {
-            const newTask = {
-              id: `task-${Date.now()}`,
-              title: actionObj.data.title,
-              brand: actionObj.data.brand,
-              platform: actionObj.data.platform || 'Lainnya',
-              status: 'idea', // Default to Idea status on kanban
-              dueDate: actionObj.data.dueDate || new Date().toISOString().split('T')[0],
-              deliverables: 'Dibuat otomatis oleh Asisten AI',
-              notes: 'Dibuat otomatis via percakapan Manajer Digital.'
-            };
-            dbCurrent.tasks = dbCurrent.tasks || [];
-            dbCurrent.tasks.push(newTask);
-            actionExecuted = { type: 'task', data: newTask };
-          } 
-          else if (actionObj.action === 'create_invoice') {
-            const newInvoice = {
-              id: `INV-${new Date().getFullYear()}-${String(Math.floor(1000 + Math.random() * 9000))}`,
-              clientName: actionObj.data.clientName,
-              clientEmail: '',
-              projectName: actionObj.data.projectName || 'Kerja Sama Kampanye',
-              issueDate: new Date().toISOString().split('T')[0],
-              dueDate: actionObj.data.dueDate || new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
-              items: [{ description: actionObj.data.projectName || 'Kerja Sama Kampanye', qty: 1, rate: actionObj.data.amount }],
-              amount: actionObj.data.amount,
-              status: 'pending'
-            };
-            dbCurrent.invoices = dbCurrent.invoices || [];
-            dbCurrent.invoices.push(newInvoice);
-            actionExecuted = { type: 'invoice', data: newInvoice };
-          } 
-          else if (actionObj.action === 'create_calendar_event') {
-            const newEvent = {
-              id: `event-${Date.now()}`,
-              title: actionObj.data.title,
-              start: actionObj.data.date || new Date().toISOString().split('T')[0],
-              type: actionObj.data.type || 'personal',
-              brand: actionObj.data.brand || ''
-            };
-            dbCurrent.calendar = dbCurrent.calendar || [];
-            dbCurrent.calendar.push(newEvent);
-            actionExecuted = { type: 'calendar', data: newEvent };
-          } 
-          else if (actionObj.action === 'update_rates') {
-            dbCurrent.profile = dbCurrent.profile || {};
-            dbCurrent.profile.rates = actionObj.data.rates;
-            actionExecuted = { type: 'profile', data: dbCurrent.profile };
+      // Detect if model outputted EXECUTE_ACTION (can match multiple times)
+      const actionRegexGlobal = /\[EXECUTE_ACTION:\s*(\{[\s\S]*?\})\s*\]/g;
+      const matches = [...replyText.matchAll(actionRegexGlobal)];
+      
+      if (matches.length > 0) {
+        const dbCurrent = readDb();
+        let dbModified = false;
+        const actionsExecuted = [];
+        
+        for (const match of matches) {
+          try {
+            const actionObj = JSON.parse(match[1]);
+            
+            if (actionObj.action === 'create_task') {
+              const newTask = {
+                id: `task-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+                title: actionObj.data.title,
+                brand: actionObj.data.brand,
+                platform: actionObj.data.platform || 'Lainnya',
+                status: 'idea', // Default to Idea status on kanban
+                dueDate: actionObj.data.dueDate || new Date().toISOString().split('T')[0],
+                deliverables: 'Dibuat otomatis oleh Asisten AI',
+                notes: 'Dibuat otomatis via percakapan Manajer Digital.'
+              };
+              dbCurrent.tasks = dbCurrent.tasks || [];
+              dbCurrent.tasks.push(newTask);
+              actionsExecuted.push({ type: 'task', data: newTask });
+              dbModified = true;
+            } 
+            else if (actionObj.action === 'create_invoice') {
+              const newInvoice = {
+                id: `INV-${new Date().getFullYear()}-${String(Math.floor(1000 + Math.random() * 9000))}`,
+                clientName: actionObj.data.clientName,
+                clientEmail: '',
+                projectName: actionObj.data.projectName || 'Kerja Sama Kampanye',
+                issueDate: new Date().toISOString().split('T')[0],
+                dueDate: actionObj.data.dueDate || new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
+                items: [{ description: actionObj.data.projectName || 'Kerja Sama Kampanye', qty: 1, rate: actionObj.data.amount }],
+                amount: actionObj.data.amount,
+                status: 'pending'
+              };
+              dbCurrent.invoices = dbCurrent.invoices || [];
+              dbCurrent.invoices.push(newInvoice);
+              actionsExecuted.push({ type: 'invoice', data: newInvoice });
+              dbModified = true;
+            } 
+            else if (actionObj.action === 'create_calendar_event') {
+              const newEvent = {
+                id: `event-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+                title: actionObj.data.title,
+                start: actionObj.data.date || new Date().toISOString().split('T')[0],
+                type: actionObj.data.type || 'personal',
+                brand: actionObj.data.brand || ''
+              };
+              dbCurrent.calendar = dbCurrent.calendar || [];
+              dbCurrent.calendar.push(newEvent);
+              actionsExecuted.push({ type: 'calendar', data: newEvent });
+              dbModified = true;
+            } 
+            else if (actionObj.action === 'update_rates') {
+              dbCurrent.profile = dbCurrent.profile || {};
+              dbCurrent.profile.rates = actionObj.data.rates;
+              actionsExecuted.push({ type: 'profile', data: dbCurrent.profile });
+              dbModified = true;
+            }
+            else if (actionObj.action === 'delete_task') {
+              const taskId = String(actionObj.data.id);
+              dbCurrent.tasks = (dbCurrent.tasks || []).filter(t => String(t.id) !== taskId);
+              actionsExecuted.push({ type: 'task_delete', data: { id: taskId } });
+              dbModified = true;
+            }
+            else if (actionObj.action === 'delete_invoice') {
+              const invoiceId = String(actionObj.data.id);
+              dbCurrent.invoices = (dbCurrent.invoices || []).filter(inv => String(inv.id) !== invoiceId);
+              actionsExecuted.push({ type: 'invoice_delete', data: { id: invoiceId } });
+              dbModified = true;
+            }
+            else if (actionObj.action === 'delete_calendar_event') {
+              const eventId = String(actionObj.data.id);
+              dbCurrent.calendar = (dbCurrent.calendar || []).filter(e => String(e.id) !== eventId);
+              actionsExecuted.push({ type: 'calendar_delete', data: { id: eventId } });
+              dbModified = true;
+            }
+          } catch (errParse) {
+            console.error("Failed executing AI action block:", errParse.message);
           }
-          else if (actionObj.action === 'delete_task') {
-            const taskId = actionObj.data.id;
-            dbCurrent.tasks = (dbCurrent.tasks || []).filter(t => t.id !== taskId);
-            actionExecuted = { type: 'task_delete', data: { id: taskId } };
-          }
-          else if (actionObj.action === 'delete_invoice') {
-            const invoiceId = actionObj.data.id;
-            dbCurrent.invoices = (dbCurrent.invoices || []).filter(inv => inv.id !== invoiceId);
-            actionExecuted = { type: 'invoice_delete', data: { id: invoiceId } };
-          }
-          else if (actionObj.action === 'delete_calendar_event') {
-            const eventId = actionObj.data.id;
-            dbCurrent.calendar = (dbCurrent.calendar || []).filter(e => e.id !== eventId);
-            actionExecuted = { type: 'calendar_delete', data: { id: eventId } };
-          }
-
-          writeDb(dbCurrent);
-          
-          // Clean the EXECUTE_ACTION block from the text response
-          replyText = replyText.replace(actionRegex, '').trim();
-        } catch (errParse) {
-          console.error("Failed executing AI action:", errParse.message);
         }
+        
+        if (dbModified) {
+          writeDb(dbCurrent);
+          actionExecuted = actionsExecuted[0] || { type: 'batch_executed' };
+        }
+        
+        // Clean all EXECUTE_ACTION blocks from the text response
+        replyText = replyText.replace(actionRegexGlobal, '').trim();
       } else {
         // Double-check fallback parse: if AI forgot but the text matches a command
         const dbCurrent = readDb();
