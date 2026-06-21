@@ -196,7 +196,7 @@ const BriefAnalyzer = ({ apiKey, addPipelineTask, addCalendarEvent, creatorProfi
                   onClick={handleSaveToPipeline}
                   disabled={saved}
                 >
-                  {saved ? 'Tersinkronisasi' : 'Sinkronkan ke Pipeline'}
+                  {saved ? 'Tersinkronisasi' : 'Sinkronkan ke Alur Konten'}
                 </button>
               </div>
             </div>

@@ -344,7 +344,7 @@ const ScriptAnalyzer = ({ apiKey, addPipelineTask, creatorProfile }) => {
                   onClick={handleAddToPipeline}
                   disabled={saved}
                 >
-                  {saved ? 'Tersimpan ke Pipeline' : 'Sinkronkan ke Pipeline'}
+                  {saved ? 'Tersimpan ke Alur Konten' : 'Sinkronkan ke Alur Konten'}
                 </button>
               </div>
             </div>

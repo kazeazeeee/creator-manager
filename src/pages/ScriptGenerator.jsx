@@ -236,7 +236,7 @@ const ScriptGenerator = ({ apiKey, addPipelineTask, creatorProfile }) => {
                   onClick={handleAddToPipeline}
                   disabled={saved}
                 >
-                  {saved ? 'Tersimpan' : 'Simpan ke Pipeline'}
+                  {saved ? 'Tersimpan' : 'Simpan ke Alur Konten'}
                 </button>
               </div>
             </div>

@@ -481,7 +481,7 @@ ${res.viralImprovements && res.viralImprovements.length > 0 ? res.viralImproveme
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button className="btn btn-secondary" onClick={handleSaveToPipeline} style={{ padding: '8px 14px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   {savedToPipeline ? <CheckCircle size={14} style={{ color: 'var(--success-color)' }} /> : <Send size={14} />} 
-                  {savedToPipeline ? 'Tersimpan' : 'Ke Pipeline'}
+                  {savedToPipeline ? 'Tersimpan' : 'Ke Alur Konten'}
                 </button>
                 <button className="btn btn-secondary" onClick={handleCopy} style={{ padding: '8px 14px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   {copied ? <CheckCircle size={14} style={{ color: 'var(--success-color)' }} /> : <Copy size={14} />} 
