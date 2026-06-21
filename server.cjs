@@ -676,6 +676,50 @@ const detectModel = (text, models) => {
   return needsOptimal ? models.optimal : models.biasa;
 };
 
+const detectAgentRole = (text) => {
+  if (!text) return null;
+  const t = text.toLowerCase();
+  
+  if (t.includes('kontrak') || t.includes('pasal') || t.includes('hukum') || t.includes('denda') || t.includes('eksklusif') || t.includes('legal') || t.includes('perjanjian')) {
+    return 'Team Legal';
+  }
+  if (t.includes('tarif') || t.includes('pajak') || t.includes('pph') || t.includes('keuntungan') || t.includes('net profit') || t.includes('cashflow') || t.includes('finansial') || t.includes('uang') || t.includes('biaya') || t.includes('rate card') || t.includes('invoice') || t.includes('tagihan')) {
+    return 'Team Finansial';
+  }
+  if (t.includes('negosiasi') || t.includes('nego') || t.includes('tawar') || t.includes('tolak') || t.includes('balas email')) {
+    return 'Team Negosiasi';
+  }
+  if (t.includes('outreach') || t.includes('pitching') || t.includes('cari brand') || t.includes('brand potensial') || t.includes('sponsor')) {
+    return 'Team Sponsor';
+  }
+  if (t.includes('ide konten') || t.includes('skrip') || t.includes('naskah') || t.includes('konsep video') || t.includes('hook') || t.includes('creative') || t.includes('buat konten')) {
+    return 'Team Creative';
+  }
+  if (t.includes('tren') || t.includes('viral') || t.includes('hashtag') || t.includes('seo') || t.includes('riset') || t.includes('keyword') || t.includes('hastag')) {
+    return 'Team Riset';
+  }
+  if (t.includes('krisis') || t.includes('biodata') || t.includes('press release') || t.includes('reputasi') || t.includes('pr ')) {
+    return 'Team PR';
+  }
+  if (t.includes('komentar') || t.includes('balas komen') || t.includes('witty') || t.includes('komunitas')) {
+    return 'Team Komunitas';
+  }
+  if (t.includes('burnout') || t.includes('stres') || t.includes('lelah') || t.includes('capek') || t.includes('kesehatan') || t.includes('mental')) {
+    return 'Team Kesehatan';
+  }
+  if (t.includes('brief') || t.includes('ringkasan') || t.includes('pdf')) {
+    return 'Team Brief';
+  }
+  if (t.includes('laporan') || t.includes('report') || t.includes('roi') || t.includes('kinerja') || t.includes('reporter')) {
+    return 'Team Reporter';
+  }
+  if (t.includes('performa') || t.includes(' views') || t.includes(' likes') || t.includes('er ') || t.includes('kampanye')) {
+    return 'Team Kampanye';
+  }
+  
+  return null;
+};
+
 const callSumopod = async (prompt, apiKey, model, expectJson = false) => {
   if (!apiKey) {
     throw new Error('API Key SumoPod tidak ditemukan di Server. Harap atur API Key di Setelan Dasbor.');
@@ -1276,8 +1320,13 @@ app.post('/api/ai/chat', async (req, res) => {
   const lastMsg = messageHistory[messageHistory.length - 1]?.text || '';
   const selectedModel = detectModel(lastMsg, models);
 
+  let activeRole = agentRole;
+  if (!activeRole || activeRole === 'None') {
+    activeRole = detectAgentRole(lastMsg) || 'Manajer Digital';
+  }
+
   const messagesFormatted = messageHistory.map(msg => {
-    return `${msg.sender === 'user' ? 'Kreator' : (msg.senderName || agentRole || 'Manajer Digital (Anda)')}: ${msg.text}`;
+    return `${msg.sender === 'user' ? 'Kreator' : (msg.senderName || (activeRole !== 'Team Meeting' ? activeRole : 'Manajer Digital'))}: ${msg.text}`;
   }).join('\n');
 
   const profile = db.profile || {};
@@ -1375,10 +1424,10 @@ Gunakan format penulisan di mana masing-masing asisten memberikan kontribusi/sar
 - 🔒 **[Team Legal]**: "Rekomendasi denda/klausul kontrak..."
 
 Pastikan tanggapan akhir Anda santai, bersahabat, sangat menyemangati, dan menyatukan seluruh opini asisten menjadi solusi konkret yang siap dieksekusi oleh Kreator. Anda memiliki akses ke seluruh data kreator di bawah.`;
-  } else if (agentRole && agentSpecializations[agentRole]) {
-    systemPrompt = agentSpecializations[agentRole] + `\nAnda memiliki akses ke seluruh data kreator di bawah. Gunakan data tersebut untuk memberikan analisis dan saran yang spesifik.`;
-  } else if (agentRole) {
-    systemPrompt = `Anda adalah agen spesialis "${agentRole}" untuk seorang konten kreator. Bantu mereka sesuai keahlian peran Anda. Anda memiliki akses ke seluruh data kreator di bawah.`;
+  } else if (activeRole && agentSpecializations[activeRole]) {
+    systemPrompt = agentSpecializations[activeRole] + `\nAnda memiliki akses ke seluruh data kreator di bawah. Gunakan data tersebut untuk memberikan analisis dan saran yang spesifik.`;
+  } else if (activeRole && activeRole !== 'Manajer Digital') {
+    systemPrompt = `Anda adalah agen spesialis "${activeRole}" untuk seorang konten kreator. Bantu mereka sesuai keahlian peran Anda. Anda memiliki akses ke seluruh data kreator di bawah.`;
   } else {
     systemPrompt = `Anda adalah "Manajer Digital" pribadi sekaligus teman diskusi cerdas dan suportif untuk seorang konten kreator.
 MINDSET UTAMA ANDA: Fokus pengembangan utama kreator adalah platform TikTok (Prioritas 1), lalu Instagram (Prioritas 2), dan terakhir YouTube (Prioritas 3). Selalu utamakan strategi, format, dan ide yang *TikTok-first*, lalu sesuaikan untuk platform lain.
@@ -1437,7 +1486,7 @@ Tanggapan Baru Anda (singkat & tepat sasaran):
 
     if (useFallback) {
       const dbCurrent = readDb();
-      const result = runLocalChatSimulation(lastMsg, agentRole, teamMeetingAgents, dbCurrent);
+      const result = runLocalChatSimulation(lastMsg, activeRole, teamMeetingAgents, dbCurrent);
       replyText = result.reply;
       actionExecuted = result.actionExecuted;
     } else {
@@ -1539,14 +1588,14 @@ Tanggapan Baru Anda (singkat & tepat sasaran):
       } else {
         // Double-check fallback parse: if AI forgot but the text matches a command
         const dbCurrent = readDb();
-        const result = runLocalChatSimulation(lastMsg, agentRole, teamMeetingAgents, dbCurrent);
+        const result = runLocalChatSimulation(lastMsg, activeRole, teamMeetingAgents, dbCurrent);
         if (result.actionExecuted) {
           actionExecuted = result.actionExecuted;
           replyText = `${replyText}\n\n[Sistem Autopilot]: Saya juga telah mengeksekusi tindakan berikut berdasarkan permintaan Anda: ${result.reply}`;
         }
       }
     }
-    res.json({ reply: replyText, actionExecuted });
+    res.json({ reply: replyText, actionExecuted, agentRole: activeRole });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });

@@ -541,7 +541,11 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEven
         if (res.actionExecuted && refreshAllData) {
           refreshAllData();
         }
-        const finalMessages = [...updatedMessagesForState, { sender: 'assistant', text: res.reply }];
+        const finalMessages = [...updatedMessagesForState, { 
+          sender: 'assistant', 
+          senderName: res.agentRole || detectedAgentRole || 'Manajer Digital',
+          text: res.reply 
+        }];
         saveSessions(sessions.map(s => {
           if (s.id === activeSessionId) {
             return { ...s, messages: finalMessages };
