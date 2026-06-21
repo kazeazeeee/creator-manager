@@ -949,9 +949,17 @@ function runLocalChatSimulation(lastMsg, agentRole, teamMeetingAgents, db) {
   // 0. Detect Delete Commands first to prevent collision with creation
   if ((lowerText.includes('hapus') || lowerText.includes('delete') || lowerText.includes('buang') || lowerText.includes('batal') || lowerText.includes('cancel')) && 
       (lowerText.includes('invoice') || lowerText.includes('tagihan'))) {
+    db.invoices = db.invoices || [];
+    if (lowerText.includes('semua') || lowerText.includes('all')) {
+      const count = db.invoices.length;
+      db.invoices = [];
+      writeDb(db);
+      reply = `Tentu, saya telah menghapus semua invoice (${count} invoice) dari database.`;
+      actionExecuted = { type: 'invoice_delete_all' };
+      return { reply, actionExecuted };
+    }
     const invIdMatch = lastMsg.match(/INV-[\d\w-]+/i);
     let deletedInvoice = null;
-    db.invoices = db.invoices || [];
     if (invIdMatch) {
       const targetId = invIdMatch[0].toUpperCase();
       const index = db.invoices.findIndex(inv => inv.id.toUpperCase() === targetId);
@@ -983,9 +991,17 @@ function runLocalChatSimulation(lastMsg, agentRole, teamMeetingAgents, db) {
 
   if ((lowerText.includes('hapus') || lowerText.includes('delete') || lowerText.includes('buang') || lowerText.includes('batal')) && 
       (lowerText.includes('jadwal') || lowerText.includes('agenda') || lowerText.includes('kalender') || lowerText.includes('event'))) {
+    db.calendar = db.calendar || [];
+    if (lowerText.includes('semua') || lowerText.includes('all')) {
+      const count = db.calendar.length;
+      db.calendar = [];
+      writeDb(db);
+      reply = `Tentu, saya telah menghapus semua agenda (${count} agenda) dari Kalender Anda.`;
+      actionExecuted = { type: 'calendar_delete_all' };
+      return { reply, actionExecuted };
+    }
     const queryMatch = lastMsg.match(/(?:jadwal|agenda|kalender|event)\s+(?:untuk\s+|tentang\s+|berjudul\s+|rapat\s+|meeting\s+)?([a-zA-Z0-9\s-]+)/i);
     let deletedEvent = null;
-    db.calendar = db.calendar || [];
     if (queryMatch) {
       const q = queryMatch[1].trim().toLowerCase();
       const index = db.calendar.findIndex(e => e.title.toLowerCase().includes(q) || (e.brand && e.brand.toLowerCase().includes(q)));
@@ -1016,10 +1032,18 @@ function runLocalChatSimulation(lastMsg, agentRole, teamMeetingAgents, db) {
   }
 
   if ((lowerText.includes('hapus') || lowerText.includes('delete') || lowerText.includes('buang')) && 
-      (lowerText.includes('tugas') || lowerText.includes('task') || lowerText.includes('pekerjaan'))) {
-    const queryMatch = lastMsg.match(/(?:tugas|task|pekerjaan)\s+(?:untuk\s+|tentang\s+|berjudul\s+)?([a-zA-Z0-9\s-]+)/i);
-    let deletedTask = null;
+      (lowerText.includes('tugas') || lowerText.includes('task') || lowerText.includes('pekerjaan') || lowerText.includes('kanban'))) {
     db.tasks = db.tasks || [];
+    if (lowerText.includes('semua') || lowerText.includes('all')) {
+      const count = db.tasks.length;
+      db.tasks = [];
+      writeDb(db);
+      reply = `Siap, saya telah menghapus semua tugas (${count} tugas) dari alur kerja Anda.`;
+      actionExecuted = { type: 'task_delete_all' };
+      return { reply, actionExecuted };
+    }
+    const queryMatch = lastMsg.match(/(?:tugas|task|pekerjaan|kanban)\s+(?:untuk\s+|tentang\s+|berjudul\s+)?([a-zA-Z0-9\s-]+)/i);
+    let deletedTask = null;
     if (queryMatch) {
       const q = queryMatch[1].trim().toLowerCase();
       const index = db.tasks.findIndex(t => t.title.toLowerCase().includes(q) || t.brand.toLowerCase().includes(q));
@@ -1028,7 +1052,7 @@ function runLocalChatSimulation(lastMsg, agentRole, teamMeetingAgents, db) {
         db.tasks.splice(index, 1);
       }
     } else {
-      const words = lowerText.split(/\s+/).filter(w => w.length > 3 && !['hapus', 'delete', 'tugas', 'task', 'pekerjaan'].includes(w));
+      const words = lowerText.split(/\s+/).filter(w => w.length > 3 && !['hapus', 'delete', 'tugas', 'task', 'pekerjaan', 'kanban'].includes(w));
       for (const w of words) {
         const index = db.tasks.findIndex(t => t.title.toLowerCase().includes(w) || t.brand.toLowerCase().includes(w));
         if (index !== -1) {
@@ -1298,7 +1322,7 @@ app.post('/api/ai/chat', async (req, res) => {
     const statusLabels = { idea: 'Ide', planning: 'Perencanaan', production: 'Produksi', review: 'Review Brand', revision: 'Revisi', published: 'Tayang', calendar: 'Jadwal' };
     creatorContext += `\n\n=== PIPELINE / ALUR KERJA KONTEN (${tasks.length} tugas) ===`;
     tasks.slice(0, 10).forEach((t, i) => {
-      creatorContext += `\n${i + 1}. "${t.title}" | Brand: ${t.brand || '-'} | Platform: ${t.platform || '-'} | Status: ${statusLabels[t.status] || t.status} | Deadline: ${t.dueDate || '-'}`;
+      creatorContext += `\n${i + 1}. [ID: ${t.id}] "${t.title}" | Brand: ${t.brand || '-'} | Platform: ${t.platform || '-'} | Status: ${statusLabels[t.status] || t.status} | Deadline: ${t.dueDate || '-'}`;
     });
     if (tasks.length > 10) creatorContext += `\n... dan ${tasks.length - 10} tugas lainnya.`;
   }
@@ -1313,7 +1337,7 @@ app.post('/api/ai/chat', async (req, res) => {
   if (calendar.length > 0) {
     creatorContext += `\n\n=== AGENDA KALENDER (${calendar.length} agenda) ===`;
     calendar.slice(0, 8).forEach((evt, i) => {
-      creatorContext += `\n${i + 1}. "${evt.title}" | Tanggal: ${evt.start || '-'} | Tipe: ${evt.type || '-'}`;
+      creatorContext += `\n${i + 1}. [ID: ${evt.id}] "${evt.title}" | Tanggal: ${evt.start || '-'} | Tipe: ${evt.type || '-'}`;
     });
   }
 
