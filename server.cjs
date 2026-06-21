@@ -663,7 +663,7 @@ const getModels = (db) => {
 const detectModel = (text, models) => {
   if (!text) return models.biasa;
   const t = text.toLowerCase();
-  const keywords = ['detail', 'analisis', 'analisa', 'jelaskan', 'hitung', 'periksa', 'gotcha', 'kontrak', 'dalam', 'mengapa', 'bagaimana', 'rumus'];
+  const keywords = ['detail', 'analisis', 'analisa', 'jelaskan', 'hitung', 'periksa', 'gotcha', 'kontrak', 'dalam', 'mengapa', 'bagaimana', 'rumus', 'pdf', 'brief', '[isi berkas:', '[isi foto:'];
   const needsOptimal = keywords.some(kw => t.includes(kw));
   return needsOptimal ? models.optimal : models.biasa;
 };

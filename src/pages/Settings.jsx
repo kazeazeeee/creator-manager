@@ -476,6 +476,9 @@ const Settings = ({
                     <option value="gpt-4o-mini">OpenAI GPT-4o Mini</option>
                     <option value="gemini-2.5-flash">Google Gemini 2.5 Flash</option>
                     <option value="claude-3-5-haiku">Anthropic Claude 3.5 Haiku</option>
+                    <option value="llama-3.1-8b-instruct">Meta Llama 3.1 8B</option>
+                    <option value="qwen-2.5-7b-instruct">Qwen 2.5 7B</option>
+                    <option value="mistral-nemo">Mistral Nemo</option>
                     <option value="glm-5-turbo">GLM 5 Turbo</option>
                     <option value="kimi-k2.6">Kimi K2.6</option>
                   </select>
@@ -490,9 +493,16 @@ const Settings = ({
                     <option value="deepseek-v4-pro">DeepSeek V4 Pro (Rekomendasi)</option>
                     <option value="deepseek-r1">DeepSeek R1 (Reasoning)</option>
                     <option value="gpt-4o">OpenAI GPT-4o</option>
-                    <option value="gemini-2.5-pro">Google Gemini 2.5 Pro</option>
-                    <option value="claude-3-5-sonnet">Anthropic Claude 3.5 Sonnet</option>
+                    <option value="gpt-4-turbo">OpenAI GPT-4 Turbo</option>
+                    <option value="o1-preview">OpenAI o1-preview</option>
                     <option value="o3-mini">OpenAI o3-mini (Reasoning)</option>
+                    <option value="claude-3-5-sonnet">Anthropic Claude 3.5 Sonnet</option>
+                    <option value="claude-3-opus-20240229">Anthropic Claude 3 Opus</option>
+                    <option value="gemini-2.5-pro">Google Gemini 2.5 Pro</option>
+                    <option value="gemini-1.5-pro">Google Gemini 1.5 Pro</option>
+                    <option value="llama-3.1-405b-instruct">Meta Llama 3.1 405B</option>
+                    <option value="mistral-large-2407">Mistral Large 2</option>
+                    <option value="qwen-2.5-72b-instruct">Qwen 2.5 72B</option>
                     <option value="glm-5">GLM 5</option>
                   </select>
                 </div>
