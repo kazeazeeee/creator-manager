@@ -465,8 +465,8 @@ const MediaKit = ({ profile, setProfile }) => {
           justifyContent: 'space-between', 
           alignItems: 'center' 
         }}>
-          <span>Konten media kit ini terintegrasi secara dinamis dengan CreatorManager.</span>
-          <strong>CREATORMANAGER</strong>
+          <span>Konten media kit ini terintegrasi secara dinamis dengan TEAM urufachan.</span>
+          <strong>TEAM URUFACHAN</strong>
         </div>
       </div>
     );

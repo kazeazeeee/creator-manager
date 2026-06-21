@@ -204,6 +204,20 @@ const Settings = ({
               </div>
 
               <div className="form-group">
+                <label>Anggota Tim (Pisahkan dengan koma)</label>
+                <input 
+                  type="text" 
+                  className="form-control"
+                  placeholder="Misal: Manager, Talent Utama, Kameramen, Editor"
+                  value={profileForm.teamMembers || ''}
+                  onChange={(e) => setProfileForm({ ...profileForm, teamMembers: e.target.value })}
+                />
+                <small style={{ display: 'block', marginTop: '4px', color: 'var(--text-secondary)', fontSize: '11px' }}>
+                  Akan muncul di pilihan "Tugaskan Ke" pada Alur Konten.
+                </small>
+              </div>
+
+              <div className="form-group">
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span style={{ display: 'inline-block', width: '16px', height: '16px', borderRadius: '4px', background: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)', textAlign: 'center', lineHeight: '16px', fontSize: '10px', color: 'white', fontWeight: '700' }}>IG</span>
                   Instagram

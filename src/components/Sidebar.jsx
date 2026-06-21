@@ -30,7 +30,7 @@ const Sidebar = ({ activeTab, setActiveTab, profile }) => {
   return (
     <aside className="sidebar no-print">
       <div className="sidebar-brand">
-        Creator<span>Manager</span>
+        TEAM <span>urufachan</span>
       </div>
       
       <ul className="sidebar-menu">

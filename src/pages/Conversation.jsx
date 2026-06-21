@@ -37,7 +37,7 @@ const SUGGESTIONS = [
   "Tulis skrip video Reels berdurasi 30 detik"
 ];
 
-const Conversation = ({ apiKey, creatorProfile, addPipelineTask, refreshAllData }) => {
+const Conversation = ({ apiKey, creatorProfile, addPipelineTask, addCalendarEvent, refreshAllData }) => {
   const [sessions, setSessions] = useState([]);
   const [activeSessionId, setActiveSessionId] = useState(null);
   const [inputText, setInputText] = useState('');
@@ -131,6 +131,16 @@ const Conversation = ({ apiKey, creatorProfile, addPipelineTask, refreshAllData 
         deliverables: structuredData.deliverables || "Draf Konten",
         notes: structuredData.notes || text
       });
+
+      if (addCalendarEvent) {
+        addCalendarEvent({
+          id: `event-task-${Date.now()}`,
+          title: `Tenggat: ${structuredData.title || "Draf Diskusi"}`,
+          start: structuredData.dueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10),
+          type: 'deadline',
+          brand: structuredData.brand || "Kemitraan"
+        });
+      }
 
       alert(`Draf berhasil dirapikan otomatis & disimpan ke Alur Kerja!\n\nProyek: ${structuredData.title}\nBrand: ${structuredData.brand}\nTenggat: ${structuredData.dueDate}\nPlatform: ${structuredData.platform}`);
     } catch (err) {

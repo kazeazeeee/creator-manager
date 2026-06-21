@@ -42,7 +42,7 @@ function App() {
   const [fontPreference, setFontPreference] = useState(localStorage.getItem('creator-font') || 'monospace');
   
   // States
-  const [profile, setProfile] = useState({ name: '', handle: '', rates: 0, currency: 'IDR', niche: '', adminPhone: '', bankName: '', bankAccount: '', bankHolder: '', instagram: '', tiktok: '', youtube: '', instagramFollowers: '', tiktokFollowers: '', tiktokLikes: '', youtubeFollowers: '', youtubeVideos: '', socialsLastSynced: '', recentPosts: [], postsLastSynced: '' });
+  const [profile, setProfile] = useState({ name: '', handle: '', rates: 0, currency: 'IDR', niche: '', adminPhone: '', bankName: '', bankAccount: '', bankHolder: '', instagram: '', tiktok: '', youtube: '', instagramFollowers: '', tiktokFollowers: '', tiktokLikes: '', youtubeFollowers: '', youtubeVideos: '', socialsLastSynced: '', recentPosts: [], postsLastSynced: '', teamMembers: '' });
   const [sumopodApiKey, setSumopodApiKey] = useState('');
   const [modelBiasa, setModelBiasa] = useState('deepseek-v4-flash');
   const [modelOptimal, setModelOptimal] = useState('deepseek-v4-pro');
@@ -334,19 +334,11 @@ function App() {
             setPipelineTasks={async (newTasks) => {
               setPipelineTasks(newTasks);
               const oldTasks = await apiGetTasks();
+              // Add/Update task sync
               newTasks.forEach(async (task) => {
                 const old = oldTasks.find(o => o.id === task.id);
-                if (old) {
-                  const isChanged = old.status !== task.status ||
-                    old.title !== task.title ||
-                    old.brand !== task.brand ||
-                    old.platform !== task.platform ||
-                    old.dueDate !== task.dueDate ||
-                    old.deliverables !== task.deliverables ||
-                    old.notes !== task.notes;
-                  if (isChanged) {
-                    await apiUpdateTask(task.id, task);
-                  }
+                if (old && JSON.stringify(old) !== JSON.stringify(task)) {
+                  await apiUpdateTask(task.id, task);
                 } else if (!old) {
                   await apiAddTask(task);
                 }
@@ -361,6 +353,7 @@ function App() {
             }} 
             addCalendarEvent={handleAddCalendarEvent} 
             onCreateInvoice={handleCreateInvoiceFromTask}
+            profile={profile}
           />
         );
       case 'ai-portal':
@@ -378,6 +371,7 @@ function App() {
             apiKey={sumopodApiKey} 
             creatorProfile={profile} 
             addPipelineTask={handleAddPipelineTask}
+            addCalendarEvent={handleAddCalendarEvent}
             refreshAllData={loadBackendData}
           />
         );

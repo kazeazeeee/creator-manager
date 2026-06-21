@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
-import { Plus, Trash, ArrowLeft, ArrowRight, Video, Calendar, Tag, AlertTriangle } from 'lucide-react';
+import { Plus, Trash, ArrowLeft, ArrowRight, Video, Calendar, Tag, AlertTriangle, CheckSquare, Link as LinkIcon, UserCircle, Flame, ShieldAlert, CheckCircle2 } from 'lucide-react';
 
-const Pipeline = ({ pipelineTasks = [], setPipelineTasks, addCalendarEvent, onCreateInvoice }) => {
+const Pipeline = ({ pipelineTasks = [], setPipelineTasks, addCalendarEvent, onCreateInvoice, profile }) => {
+  const teamMembers = profile?.teamMembers 
+    ? profile.teamMembers.split(',').map(m => m.trim()).filter(m => m) 
+    : ['Manager', 'Talent Utama', 'Kameramen', 'Editor'];
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
 
@@ -105,13 +109,30 @@ const Pipeline = ({ pipelineTasks = [], setPipelineTasks, addCalendarEvent, onCr
     });
   };
 
+  const generateAutoChecklist = (deliverablesStr, currentSubtasks = []) => {
+    if (!deliverablesStr) return currentSubtasks;
+    const parts = deliverablesStr.split(',').map(s => s.trim()).filter(s => s);
+    const newTasks = [];
+    parts.forEach((part, index) => {
+      newTasks.push({ id: `st-${Date.now()}-${index}-shoot`, text: `Take Video: ${part}`, completed: false });
+      newTasks.push({ id: `st-${Date.now()}-${index}-edit`, text: `Editing: ${part}`, completed: false });
+    });
+    return [...currentSubtasks, ...newTasks];
+  };
+
   const [newTask, setNewTask] = useState({
     title: '',
     brand: '',
     platform: 'Instagram',
     dueDate: '',
     deliverables: '',
-    notes: ''
+    notes: '',
+    contentType: 'brand',
+    assignee: 'Manager',
+    briefLink: '',
+    draftLink: '',
+    subtasks: [],
+    isRevising: false
   });
 
   const columns = [
@@ -242,7 +263,13 @@ const Pipeline = ({ pipelineTasks = [], setPipelineTasks, addCalendarEvent, onCr
       platform: 'Instagram',
       dueDate: '',
       deliverables: '',
-      notes: ''
+      notes: '',
+      contentType: 'brand',
+      assignee: 'Manager',
+      briefLink: '',
+      draftLink: '',
+      subtasks: [],
+      isRevising: false
     });
     setShowAddForm(false);
   };
@@ -291,15 +318,33 @@ const Pipeline = ({ pipelineTasks = [], setPipelineTasks, addCalendarEvent, onCr
                 />
               </div>
 
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Tipe Konten</label>
+                  <select className="form-control" value={newTask.contentType || 'brand'} onChange={e => setNewTask({...newTask, contentType: e.target.value})}>
+                    <option value="brand">Konten Brand (Sponsor)</option>
+                    <option value="regular">Konten Reguler (Organik)</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Tugaskan Ke (Assignee)</label>
+                  <select className="form-control" value={newTask.assignee || (teamMembers[0] || 'Manager')} onChange={e => setNewTask({...newTask, assignee: e.target.value})}>
+                    {teamMembers.map((member, i) => (
+                      <option key={i} value={member}>{member}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <div className="form-group">
-                <label>Nama Brand / Sponsor *</label>
+                <label>Nama Brand / Sponsor {newTask.contentType === 'regular' ? '(Opsional)' : '*'}</label>
                 <input 
                   type="text" 
                   className="form-control" 
                   placeholder="Misal: Wardah Beauty"
                   value={newTask.brand} 
                   onChange={e => setNewTask({ ...newTask, brand: e.target.value })}
-                  required
+                  required={newTask.contentType !== 'regular'}
                 />
               </div>
 
@@ -331,7 +376,12 @@ const Pipeline = ({ pipelineTasks = [], setPipelineTasks, addCalendarEvent, onCr
               </div>
 
               <div className="form-group">
-                <label>Deliverables (Detail Pekerjaan)</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label style={{ margin: 0 }}>Deliverables (Detail Pekerjaan)</label>
+                  <button type="button" className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: '10px', display: 'flex', alignItems: 'center', gap: '4px' }} onClick={() => setNewTask({...newTask, subtasks: generateAutoChecklist(newTask.deliverables, newTask.subtasks || [])})}>
+                    <CheckSquare size={12} /> AI Auto-Checklist
+                  </button>
+                </div>
                 <input 
                   type="text" 
                   className="form-control" 
@@ -339,6 +389,23 @@ const Pipeline = ({ pipelineTasks = [], setPipelineTasks, addCalendarEvent, onCr
                   value={newTask.deliverables} 
                   onChange={e => setNewTask({ ...newTask, deliverables: e.target.value })}
                 />
+                {newTask.subtasks && newTask.subtasks.length > 0 && (
+                  <div style={{ marginTop: '8px', padding: '8px', backgroundColor: 'var(--bg-primary)', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '11px' }}>
+                    <div style={{ fontWeight: '600', marginBottom: '4px' }}>Checklist Otomatis:</div>
+                    {newTask.subtasks.map(st => <div key={st.id}>- {st.text}</div>)}
+                  </div>
+                )}
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Link Brief Brand</label>
+                  <input type="text" className="form-control" placeholder="https://docs.google.com/..." value={newTask.briefLink || ''} onChange={e => setNewTask({...newTask, briefLink: e.target.value})} />
+                </div>
+                <div className="form-group">
+                  <label>Link Draf Video</label>
+                  <input type="text" className="form-control" placeholder="https://drive.google.com/..." value={newTask.draftLink || ''} onChange={e => setNewTask({...newTask, draftLink: e.target.value})} />
+                </div>
               </div>
 
               <div className="form-group">
@@ -454,14 +521,32 @@ const Pipeline = ({ pipelineTasks = [], setPipelineTasks, addCalendarEvent, onCr
                 />
               </div>
 
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Tipe Konten</label>
+                  <select className="form-control" value={editingTask.contentType || 'brand'} onChange={e => setEditingTask({...editingTask, contentType: e.target.value})}>
+                    <option value="brand">Konten Brand (Sponsor)</option>
+                    <option value="regular">Konten Reguler (Organik)</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Tugaskan Ke (Assignee)</label>
+                  <select className="form-control" value={editingTask.assignee || (teamMembers[0] || 'Manager')} onChange={e => setEditingTask({...editingTask, assignee: e.target.value})}>
+                    {teamMembers.map((member, i) => (
+                      <option key={i} value={member}>{member}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <div className="form-group">
-                <label>Nama Brand / Sponsor *</label>
+                <label>Nama Brand / Sponsor {editingTask.contentType === 'regular' ? '(Opsional)' : '*'}</label>
                 <input 
                   type="text" 
                   className="form-control" 
-                  value={editingTask.brand} 
+                  value={editingTask.brand || ''} 
                   onChange={e => setEditingTask({ ...editingTask, brand: e.target.value })}
-                  required
+                  required={editingTask.contentType !== 'regular'}
                 />
               </div>
 
@@ -493,13 +578,48 @@ const Pipeline = ({ pipelineTasks = [], setPipelineTasks, addCalendarEvent, onCr
               </div>
 
               <div className="form-group">
-                <label>Deliverables (Detail Pekerjaan)</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label style={{ margin: 0 }}>Deliverables (Detail Pekerjaan)</label>
+                  <button type="button" className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: '10px', display: 'flex', alignItems: 'center', gap: '4px' }} onClick={() => setEditingTask({...editingTask, subtasks: generateAutoChecklist(editingTask.deliverables, editingTask.subtasks || [])})}>
+                    <CheckSquare size={12} /> AI Auto-Checklist
+                  </button>
+                </div>
                 <input 
                   type="text" 
                   className="form-control" 
                   value={editingTask.deliverables || ''} 
                   onChange={e => setEditingTask({ ...editingTask, deliverables: e.target.value })}
                 />
+                {editingTask.subtasks && editingTask.subtasks.length > 0 && (
+                  <div style={{ marginTop: '8px', padding: '8px', backgroundColor: 'var(--bg-primary)', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '11px' }}>
+                    <div style={{ fontWeight: '600', marginBottom: '4px' }}>Checklist Otomatis:</div>
+                    {editingTask.subtasks.map((st, i) => (
+                      <div key={st.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={st.completed} 
+                          onChange={(e) => {
+                            const newSt = [...editingTask.subtasks];
+                            newSt[i].completed = e.target.checked;
+                            setEditingTask({...editingTask, subtasks: newSt});
+                          }} 
+                        />
+                        <span style={{ textDecoration: st.completed ? 'line-through' : 'none', opacity: st.completed ? 0.6 : 1 }}>{st.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Link Brief Brand</label>
+                  <input type="text" className="form-control" value={editingTask.briefLink || ''} onChange={e => setEditingTask({...editingTask, briefLink: e.target.value})} />
+                </div>
+                <div className="form-group">
+                  <label>Link Draf Video</label>
+                  <input type="text" className="form-control" value={editingTask.draftLink || ''} onChange={e => setEditingTask({...editingTask, draftLink: e.target.value})} />
+                </div>
               </div>
 
               <div className="form-group">
@@ -598,6 +718,28 @@ const Pipeline = ({ pipelineTasks = [], setPipelineTasks, addCalendarEvent, onCr
         </div>
       )}
 
+      {/* Burnout Warning */}
+      {(() => {
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const heavyTasksCount = pipelineTasks.filter(t => {
+          if (t.status !== 'production' && t.status !== 'editing') return false;
+          if (!t.dueDate) return false;
+          const due = new Date(t.dueDate + 'T00:00:00');
+          const diffDays = Math.round((due - today) / (1000 * 60 * 60 * 24));
+          return diffDays >= 0 && diffDays <= 7;
+        }).length;
+
+        if (heavyTasksCount >= 5) {
+          return (
+            <div style={{ padding: '12px 16px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger-color)', borderRadius: 'var(--border-radius-md)', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', fontSize: '14px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+              <Flame size={18} /> ALERT: Awas Tumbang! Ada {heavyTasksCount} video sedang diproduksi/diedit minggu ini. Jangan lupa minum tolak angin!
+            </div>
+          );
+        }
+        return null;
+      })()}
+
       {/* Kanban Board */}
       <div className="pipeline-container">
         {columns.map(col => {
@@ -628,24 +770,43 @@ const Pipeline = ({ pipelineTasks = [], setPipelineTasks, addCalendarEvent, onCr
                   <div 
                     key={task.id} 
                     className={`pipeline-card ${dlClass} ${task.status === 'published' ? 'status-published' : ''}`}
+                    style={task.isRevising ? { border: '2px solid var(--danger-color)', backgroundColor: 'rgba(239, 68, 68, 0.03)' } : {}}
                     draggable
                     onDragStart={(e) => handleDragStart(e, task.id)}
                     onDoubleClick={() => { setEditingTask({...task}); setEditNotesTab('preview'); }}
                     title="Klik ganda untuk mengedit"
                   >
-                    <div className="card-project-header">
-                      <span className="card-project-brand">{task.brand}</span>
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <div className="card-project-header" style={{ marginBottom: '4px' }}>
+                      <span className="card-project-brand" style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                        {task.contentType === 'regular' ? (
+                          <span style={{ padding: '2px 6px', background: 'var(--accent-light)', color: 'var(--accent-color)', borderRadius: '4px', fontSize: '9px', fontWeight: 'bold' }}>ORGANIK</span>
+                        ) : (
+                          <span style={{ padding: '2px 6px', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', borderRadius: '4px', fontSize: '9px', fontWeight: 'bold' }}>SPONSOR</span>
+                        )}
+                        {task.brand || 'Konten Personal'}
+                      </span>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        {task.isRevising && (
+                          <span style={{ fontSize: '9px', fontWeight: 'bold', color: 'var(--danger-color)', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                            <ShieldAlert size={10} /> REVISI!
+                          </span>
+                        )}
                         <button 
                           style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', padding: 0 }}
-                          onClick={() => handleDelete(task.id)}
+                          onClick={(e) => { e.stopPropagation(); handleDelete(task.id); }}
+                          onMouseDown={(e) => e.stopPropagation()}
                           title="Hapus Tugas"
                         >
                           <Trash size={12} />
                         </button>
                       </div>
                     </div>
-                    <div className="card-project-title">{task.title}</div>
+                    
+                    <div className="card-project-title" style={{ marginBottom: '4px' }}>{task.title}</div>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                      <UserCircle size={12} /> {task.assignee || 'Manager'}
+                    </div>
                     
                     {task.deliverables && (
                       <div style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
@@ -681,15 +842,50 @@ const Pipeline = ({ pipelineTasks = [], setPipelineTasks, addCalendarEvent, onCr
                       </div>
                     )}
 
-                    <div className="card-project-meta">
+                    <div className="card-project-meta" style={{ flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><Tag size={10} /> {task.platform}</span>
+                      {task.briefLink && (
+                        <a href={task.briefLink} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '3px', color: 'var(--accent-color)', textDecoration: 'none', fontSize: '10px' }} onClick={e => e.stopPropagation()}>
+                          <LinkIcon size={10} /> Brief
+                        </a>
+                      )}
+                      {task.draftLink && (
+                        <a href={task.draftLink} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#8b5cf6', textDecoration: 'none', fontSize: '10px' }} onClick={e => e.stopPropagation()}>
+                          <CheckCircle2 size={10} /> Draf
+                        </a>
+                      )}
                     </div>
 
-                    <div className="card-actions">
-                      <button onClick={() => moveLeft(task.id, task.status)} disabled={col.id === 'calendar'}>
+                    {task.subtasks && task.subtasks.length > 0 && (
+                      <div style={{ marginTop: '8px', width: '100%' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: 'var(--text-secondary)', marginBottom: '2px', fontWeight: 'bold' }}>
+                          <span>Checklist</span>
+                          <span>{task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}</span>
+                        </div>
+                        <div style={{ height: '4px', backgroundColor: 'var(--border-color)', borderRadius: '2px', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', backgroundColor: 'var(--accent-color)', width: `${(task.subtasks.filter(s => s.completed).length / task.subtasks.length) * 100}%`, transition: 'width 0.3s ease' }} />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="card-actions" style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <button onClick={(e) => { e.stopPropagation(); moveLeft(task.id, task.status); }} onMouseDown={(e) => e.stopPropagation()} disabled={col.id === 'calendar'} style={{ flex: 'none', cursor: col.id === 'calendar' ? 'not-allowed' : 'pointer' }}>
                         <ArrowLeft size={10} />
                       </button>
-                      <button onClick={() => moveRight(task.id, task.status)} disabled={col.id === 'published'}>
+                      
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const updated = pipelineTasks.map(t => t.id === task.id ? {...t, isRevising: !t.isRevising} : t);
+                          setPipelineTasks(updated);
+                        }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        style={{ padding: '3px 8px', fontSize: '9.5px', fontWeight: 'bold', borderRadius: '4px', border: '1px solid', backgroundColor: task.isRevising ? 'rgba(239, 68, 68, 0.1)' : 'transparent', color: task.isRevising ? 'var(--danger-color)' : 'var(--text-secondary)', borderColor: task.isRevising ? 'var(--danger-color)' : 'var(--border-color)', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        {task.isRevising ? 'Batal Revisi' : 'Tandai Revisi'}
+                      </button>
+
+                      <button onClick={(e) => { e.stopPropagation(); moveRight(task.id, task.status); }} onMouseDown={(e) => e.stopPropagation()} disabled={col.id === 'published'} style={{ flex: 'none', cursor: col.id === 'published' ? 'not-allowed' : 'pointer' }}>
                         <ArrowRight size={10} />
                       </button>
                     </div>

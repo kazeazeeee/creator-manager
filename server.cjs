@@ -1809,17 +1809,17 @@ Anda adalah Konsultan Kreatif Konten Media Sosial dan Tren Viral kelas dunia di 
 Tugas Anda adalah merancang 1 (satu) ide konten kreatif yang sangat berpotensi viral untuk hari ini.
 Berikan ide yang unik, segar, spesifik, dan siap diproduksi oleh kreator.
 
-PENTING - BAHASA & GAYA PENULISAN (WAJIB NATURAL & BUKAN SEPERTI AI):
-- Gunakan bahasa Indonesia yang sangat natural, kasual, dan mengalir layaknya ditulis oleh kreator/influencer manusia sungguhan yang sudah berpengalaman di media sosial.
-- JANGAN gunakan gaya bahasa robotik atau klise khas AI (contoh yang DILARANG: kata sapaan berlebihan seperti "Halo sahabat kuliner!", kalimat pembuka "Wah, siapa nih yang...", ajakan cheesy seperti "Yuk simak!", "Tunggu apa lagi!", "Dijamin bikin ngiler!", serta penggunaan tanda seru (!) yang terlalu sering).
-- Tulis draf Hook dan Konsep dengan nada yang santai, tenang, estetik, berkelas, dan langsung pada intinya (straight to the point). 
-- JANGAN gunakan bahasa Inggris atau bahasa asing lainnya untuk isi teks, kecuali istilah teknis (seperti "close-up", "lighting", "slow-mo") atau nama menu makanan yang tidak bisa diterjemahkan.
+PENTING - BAHASA & GAYA PENULISAN:
+- Gunakan bahasa yang tidak terlalu baku. Jangan gunakan bahasa formal.
+- Gunakan bahasa yang aneh, unik, nyeleneh, atau bahkan bahasa gaul yang sedang tren.
+- Jangan ragu untuk memasukkan istilah-istilah yang tidak biasa atau gaya bahasa "cringe" yang lucu.
 
-PENTING - KUALITAS & KELAS KONTEN (ANTI-CRINGE):
-- Hindari ide konten yang murahan, konyol, gimmicky, atau cringe (misalnya: tantangan makan ekstrim yang aneh/kotor, ekspresi akting yang berlebihan/palsu, atau memadukan makanan secara absurd yang tidak nikmat dilihat).
-- Fokuslah pada ide konten yang estetik, menggugah selera (drool-worthy), bersih, sinematik, dan berkelas.
-- Optimalkan aspek audio visual (misalnya close-up detail tekstur makanan yang memukau, kejelasan suara kunyahan ASMR yang renyah/nikmat, pencahayaan sinematik).
-- Ide harus terasa orisinal, otentik, memanjakan mata penonton, dan disukai audiens umum secara organik.
+PENTING - KUALITAS & KELAS KONTEN:
+- Buat ide yang fresh dan menarik.
+- Masukkan elemen-elemen atau ide yang "cringe" tapi tetap menghibur dan bikin penasaran.
+- Ide konten boleh konyol, gimmicky, atau absurd (misalnya memadukan makanan aneh atau ekspresi lebay).
+- Buat penonton bereaksi karena keanehan atau keunikannya.
+- Ide harus fresh dan menarik perhatian secara cepat.
 
 Kembalikan hasilnya dalam format JSON yang valid dengan struktur berikut (tuliskan isi nilainya dalam Bahasa Indonesia):
 {
@@ -2545,6 +2545,6 @@ if (fs.existsSync(distPath)) {
 
 // Start Server
 app.listen(PORT, () => {
-  console.log(`CreatorManager Server running on port ${PORT}`);
+  console.log(`TEAM urufachan Server running on port ${PORT}`);
 });
 
