@@ -14,6 +14,8 @@ import Analytics from './pages/Analytics';
 import AIPortal from './pages/AIPortal';
 import Conversation from './pages/Conversation';
 import Note from './pages/Note';
+import Login from './pages/Login';
+import AdminDashboard from './pages/AdminDashboard';
 
 import { 
   apiGetProfile, 
@@ -38,6 +40,15 @@ import { parseAuthHash, fetchGoogleEvents } from './utils/googleCalendar';
 import { applyTheme, applyFont } from './utils/themes';
 
 function App() {
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('creator-session');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
   const [activeTab, setActiveTab] = useState('overview');
   const [theme, setTheme] = useState(localStorage.getItem('creator-theme') || 'dark');
   const [fontPreference, setFontPreference] = useState(localStorage.getItem('creator-font') || 'monospace');
@@ -106,10 +117,18 @@ function App() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('creator-session');
+    setCurrentUser(null);
+    setActiveTab('overview');
+  };
+
   // 1. Fetch data on mount
   useEffect(() => {
-    loadBackendData();
-  }, []);
+    if (currentUser) {
+      loadBackendData();
+    }
+  }, [currentUser]);
 
   // Theme Sync Effect
   useEffect(() => {
@@ -467,18 +486,59 @@ function App() {
             }}
           />
         );
+      case 'admin-dashboard':
+        if (currentUser?.role !== 'admin') {
+          return (
+            <Dashboard 
+              invoices={invoices} 
+              pipelineTasks={pipelineTasks} 
+              calendarEvents={calendarEvents} 
+              setActiveTab={setActiveTab} 
+              addPipelineTask={handleAddPipelineTask}
+              profile={profile}
+              setProfile={setProfile}
+            />
+          );
+        }
+        return <AdminDashboard currentUser={currentUser} />;
       default:
-        return <Dashboard invoices={invoices} pipelineTasks={pipelineTasks} calendarEvents={calendarEvents} setActiveTab={setActiveTab} />;
+        return (
+          <Dashboard 
+            invoices={invoices} 
+            pipelineTasks={pipelineTasks} 
+            calendarEvents={calendarEvents} 
+            setActiveTab={setActiveTab} 
+            addPipelineTask={handleAddPipelineTask}
+            profile={profile}
+            setProfile={setProfile}
+          />
+        );
     }
   };
+
+  if (!currentUser) {
+    return (
+      <Login 
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          localStorage.setItem('creator-session', JSON.stringify(user));
+        }} 
+      />
+    );
+  }
 
   return (
     <div className="app-container">
       {/* Sidebar Navigation */}
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} profile={profile} />
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        currentUser={currentUser} 
+        onLogout={handleLogout} 
+      />
 
       {/* Main Content Area */}
-      <main className={`main-content animate-fade-in-up ${['pipeline', 'calendar', 'conversation', 'analytics', 'toolkit', 'note'].includes(activeTab) ? 'wide-layout' : ''}`} key={activeTab}>
+      <main className={`main-content animate-fade-in-up ${['pipeline', 'calendar', 'conversation', 'analytics', 'toolkit', 'note', 'admin-dashboard'].includes(activeTab) ? 'wide-layout' : ''}`} key={activeTab}>
         {renderPage()}
       </main>
 

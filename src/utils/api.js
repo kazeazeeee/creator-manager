@@ -237,6 +237,19 @@ export const apiOptimizeRates = (targetIncome) => request('/ai/optimize-rates', 
   body: JSON.stringify({ targetIncome })
 });
 
+// --- User & Auth APIs ---
+export const apiLogin = (username, password) => request('/auth/login', {
+  method: 'POST',
+  body: JSON.stringify({ username, password })
+});
 
+export const apiGetUsers = () => request('/users');
 
+export const apiCreateUser = (user) => request('/users', {
+  method: 'POST',
+  body: JSON.stringify(user)
+});
 
+export const apiDeleteUser = (id) => request(`/users/${id}`, {
+  method: 'DELETE'
+});

@@ -39,7 +39,18 @@ const readDb = () => {
       return {};
     }
     const data = fs.readFileSync(DB_PATH, 'utf8');
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    
+    // Seed default users if table is empty/missing
+    if (!parsed.users || parsed.users.length === 0) {
+      parsed.users = [
+        { id: '1', username: 'admin', password: 'admin123', role: 'admin' },
+        { id: '2', username: 'user', password: 'user123', role: 'user' }
+      ];
+      fs.writeFileSync(DB_PATH, JSON.stringify(parsed, null, 2), 'utf8');
+    }
+    
+    return parsed;
   } catch (err) {
     console.error('Error reading db.json:', err);
     return {};
@@ -90,9 +101,72 @@ const performBackup = () => {
 // Run backup immediately on startup, then every 24 hours
 performBackup();
 setInterval(performBackup, 24 * 60 * 60 * 1000);
+
+// Initialize/seed database on startup
+readDb();
 // -------------------------
 
-// --- REST API ENDPOINTS ---
+// --- AUTH & USER ENDPOINTS ---
+app.post('/api/auth/login', (req, res) => {
+  const db = readDb();
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username dan password wajib diisi' });
+  }
+  const user = (db.users || []).find(
+    u => u.username.toLowerCase() === username.toLowerCase() && u.password === password
+  );
+  if (!user) {
+    return res.status(401).json({ error: 'Username atau password salah' });
+  }
+  const { password: _, ...userWithoutPassword } = user;
+  res.json({ success: true, user: userWithoutPassword });
+});
+
+app.get('/api/users', (req, res) => {
+  const db = readDb();
+  const users = (db.users || []).map(({ password, ...u }) => u);
+  res.json(users);
+});
+
+app.post('/api/users', (req, res) => {
+  const db = readDb();
+  const { username, password, role } = req.body;
+  if (!username || !password || !role) {
+    return res.status(400).json({ error: 'Semua kolom (username, password, role) wajib diisi' });
+  }
+  const exists = (db.users || []).some(
+    u => u.username.toLowerCase() === username.toLowerCase()
+  );
+  if (exists) {
+    return res.status(400).json({ error: 'Username sudah digunakan' });
+  }
+  const newUser = {
+    id: `user-${Date.now()}`,
+    username,
+    password,
+    role
+  };
+  db.users = [...(db.users || []), newUser];
+  writeDb(db);
+  const { password: _, ...userWithoutPassword } = newUser;
+  res.status(201).json({ success: true, user: userWithoutPassword });
+});
+
+app.delete('/api/users/:id', (req, res) => {
+  const db = readDb();
+  const userId = req.params.id;
+  const userToDelete = (db.users || []).find(u => u.id === userId);
+  if (!userToDelete) {
+    return res.status(404).json({ error: 'User tidak ditemukan' });
+  }
+  if (userToDelete.username.toLowerCase() === 'admin') {
+    return res.status(400).json({ error: 'Akun admin bawaan tidak dapat dihapus' });
+  }
+  db.users = (db.users || []).filter(u => u.id !== userId);
+  writeDb(db);
+  res.json({ success: true });
+});
 
 // Profile Endpoints
 app.get('/api/profile', (req, res) => {
